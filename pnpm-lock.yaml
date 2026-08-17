@@ -17,6 +17,9 @@ importers:
       '@fastify/cors':
         specifier: ^11.1.0
         version: 11.3.0
+      '@vibe/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       fastify:
         specifier: ^5.6.0
         version: 5.12.0
@@ -61,6 +64,9 @@ importers:
       '@react-navigation/native-stack':
         specifier: ^7.18.8
         version: 7.18.8(@react-navigation/native@7.3.16(react-native@0.86.2(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native-safe-area-context@5.7.0(react-native@0.86.2(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native-screens@4.26.2(react-native@0.86.2(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
+      '@vibe/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       expo:
         specifier: ~57.0.13
         version: 57.0.13(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-native@0.86.2(@babel/core@7.29.7)(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
@@ -83,6 +89,12 @@ importers:
       '@types/react':
         specifier: ~19.2.2
         version: 19.2.18
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+
+  packages/types:
+    devDependencies:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
