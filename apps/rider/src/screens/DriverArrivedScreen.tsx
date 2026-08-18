@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import {
   Pressable,
   StyleSheet,
@@ -22,13 +22,11 @@ import {
 type NavigationProp =
   NativeStackNavigationProp<RootStackParamList>;
 
-export default function DriverArrivingScreen() {
+export default function DriverArrivedScreen() {
   const navigation =
     useNavigation<NavigationProp>();
 
   const {
-    rideStatus,
-    etaMinutes,
     driverName,
     driverRating,
     driverVehicle,
@@ -36,26 +34,10 @@ export default function DriverArrivingScreen() {
     cancelRide,
   } = useRide();
 
-  useEffect(() => {
-    if (rideStatus !== "driver_arrived") {
-      return;
-    }
-
-    navigation.replace("DriverArrived");
-  }, [rideStatus, navigation]);
-
   const handleCancel = () => {
     cancelRide();
     navigation.navigate("Home");
   };
-
-  const eta = etaMinutes ?? 0;
-
-  const progress =
-    Math.min(
-      100,
-      Math.max(8, 100 - eta * 28),
-    );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -70,76 +52,58 @@ export default function DriverArrivingScreen() {
             </Text>
 
             <Text style={styles.headerTitle}>
-              Your ride is moving.
+              They're here.
             </Text>
           </View>
 
-          <View style={styles.statusBadge}>
-            <View style={styles.statusDot} />
+          <View style={styles.arrivedBadge}>
+            <View style={styles.badgeDot} />
 
-            <Text style={styles.statusText}>
-              ON THE WAY
-            </Text>
-          </View>
-        </View>
-
-        {/* ETA HERO */}
-        <View style={styles.etaCard}>
-          <View style={styles.etaTop}>
-            <View>
-              <Text style={styles.etaEyebrow}>
-                DRIVER ETA
-              </Text>
-
-              <Text style={styles.etaTitle}>
-                {eta > 0
-                  ? `${eta} min away`
-                  : "They're here 👀"}
-              </Text>
-            </View>
-
-            <View style={styles.etaIcon}>
-              <Text style={styles.etaEmoji}>
-                🛵
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${progress}%`,
-                },
-              ]}
-            />
-
-            <View
-              style={[
-                styles.progressDot,
-                {
-                  left: `${Math.min(
-                    94,
-                    progress,
-                  )}%`,
-                },
-              ]}
-            />
-          </View>
-
-          <View style={styles.progressLabels}>
-            <Text style={styles.progressLabel}>
-              Driver
-            </Text>
-
-            <Text style={styles.progressLabel}>
-              You
+            <Text style={styles.badgeText}>
+              ARRIVED
             </Text>
           </View>
         </View>
 
-        {/* DRIVER */}
+        {/* HERO */}
+        <View style={styles.hero}>
+          <View style={styles.heroCircle}>
+            <Text style={styles.heroEmoji}>
+              👀
+            </Text>
+          </View>
+
+          <Text style={styles.heroTitle}>
+            Your ride is here.
+          </Text>
+
+          <Text style={styles.heroDescription}>
+            Before you hop in, match the vehicle
+            and plate with the details below.
+          </Text>
+        </View>
+
+        {/* SAFETY CHECK */}
+        <View style={styles.safetyCard}>
+          <View style={styles.safetyIcon}>
+            <Text style={styles.safetyEmoji}>
+              ✓
+            </Text>
+          </View>
+
+          <View style={styles.safetyContent}>
+            <Text style={styles.safetyTitle}>
+              Quick safety check
+            </Text>
+
+            <Text style={styles.safetyDescription}>
+              Confirm your driver's vehicle and
+              plate before entering.
+            </Text>
+          </View>
+        </View>
+
+        {/* DRIVER CARD */}
         <View style={styles.driverCard}>
           <View style={styles.driverTop}>
             <View style={styles.avatar}>
@@ -189,35 +153,37 @@ export default function DriverArrivingScreen() {
                 {driverVehicle ?? "Honda Activa"}
               </Text>
 
-              <Text style={styles.vehiclePlate}>
-                {driverPlate ?? "UP 14 AB 4821"}
+              <Text style={styles.vehicleLabel}>
+                Vehicle
               </Text>
             </View>
 
-            <View style={styles.plateBadge}>
-              <Text style={styles.plateText}>
-                MATCHED
+            <View style={styles.plateCard}>
+              <Text style={styles.plate}>
+                {driverPlate ?? "UP 14 AB 4821"}
+              </Text>
+
+              <Text style={styles.plateLabel}>
+                PLATE
               </Text>
             </View>
           </View>
         </View>
 
-        {/* STATUS MESSAGE */}
-        <View style={styles.messageCard}>
-          <View style={styles.messageIcon}>
-            <Text style={styles.messageEmoji}>
-              ✨
-            </Text>
-          </View>
+        {/* VIBE MESSAGE */}
+        <View style={styles.vibeCard}>
+          <Text style={styles.vibeMark}>
+            ✦
+          </Text>
 
-          <View style={styles.messageContent}>
-            <Text style={styles.messageTitle}>
-              Main character moment.
+          <View style={styles.vibeContent}>
+            <Text style={styles.vibeTitle}>
+              We have a match.
             </Text>
 
-            <Text style={styles.messageDescription}>
-              Your driver is pulling up. Keep an
-              eye out for your match.
+            <Text style={styles.vibeDescription}>
+              Plate matches? Perfect. Time to
+              get moving.
             </Text>
           </View>
         </View>
@@ -233,11 +199,11 @@ export default function DriverArrivingScreen() {
           >
             <View>
               <Text style={styles.primaryEyebrow}>
-                RIDE STATUS
+                DRIVER VERIFIED
               </Text>
 
               <Text style={styles.primaryText}>
-                Driver is coming
+                Start my ride
               </Text>
             </View>
 
@@ -260,8 +226,8 @@ export default function DriverArrivingScreen() {
         </View>
 
         <Text style={styles.footer}>
-          Driver details are shared for your
-          safety.
+          If anything feels wrong, don't get in.
+          Your safety comes first.
         </Text>
       </View>
     </SafeAreaView>
@@ -278,7 +244,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 26,
+    paddingBottom: 25,
   },
 
   header: {
@@ -298,32 +264,30 @@ const styles = StyleSheet.create({
   headerTitle: {
     marginTop: 4,
     fontFamily: fonts.heading,
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: "900",
     color: colors.ink,
   },
 
-  statusBadge: {
+  arrivedBadge: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: radius.pill,
-    backgroundColor: colors.limeSoft,
+    backgroundColor: colors.lime,
     borderWidth: 1.5,
     borderColor: colors.ink,
   },
 
-  statusDot: {
+  badgeDot: {
     width: 7,
     height: 7,
     borderRadius: radius.pill,
-    backgroundColor: colors.lime,
-    borderWidth: 1,
-    borderColor: colors.ink,
+    backgroundColor: colors.ink,
   },
 
-  statusText: {
+  badgeText: {
     marginLeft: 5,
     fontFamily: fonts.bodyBold,
     fontSize: 7,
@@ -332,100 +296,102 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
 
-  etaCard: {
-    marginTop: 22,
-    padding: 19,
-    borderRadius: radius.xl,
-    backgroundColor: colors.ink,
+  hero: {
+    alignItems: "center",
+    marginTop: 23,
+  },
+
+  heroCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.pill,
+    backgroundColor: colors.lime,
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 2,
     borderColor: colors.ink,
-    ...shadows.offset,
+    ...shadows.offsetSmall,
   },
 
-  etaTop: {
+  heroEmoji: {
+    fontSize: 32,
+  },
+
+  heroTitle: {
+    marginTop: 16,
+    fontFamily: fonts.display,
+    fontSize: 31,
+    lineHeight: 34,
+    fontWeight: "900",
+    letterSpacing: -1,
+    color: colors.ink,
+  },
+
+  heroDescription: {
+    maxWidth: 300,
+    marginTop: 7,
+    textAlign: "center",
+    fontFamily: fonts.body,
+    fontSize: 11,
+    lineHeight: 17,
+    color: colors.muted,
+  },
+
+  safetyCard: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    marginTop: 16,
+    padding: 13,
+    borderRadius: radius.lg,
+    backgroundColor: colors.limeSoft,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
   },
 
-  etaEyebrow: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1.4,
-    color: colors.lime,
-  },
-
-  etaTitle: {
-    marginTop: 5,
-    fontFamily: fonts.display,
-    fontSize: 28,
-    lineHeight: 31,
-    fontWeight: "900",
-    letterSpacing: -0.8,
-    color: colors.surface,
-  },
-
-  etaIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
+  safetyIcon: {
+    width: 39,
+    height: 39,
+    borderRadius: radius.md,
     backgroundColor: colors.lime,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  etaEmoji: {
-    fontSize: 27,
-  },
-
-  progressTrack: {
-    height: 7,
-    marginTop: 25,
-    borderRadius: radius.pill,
-    backgroundColor: "#3A3A3A",
-    position: "relative",
-    overflow: "visible",
-  },
-
-  progressFill: {
-    height: 7,
-    borderRadius: radius.pill,
-    backgroundColor: colors.lime,
-  },
-
-  progressDot: {
-    position: "absolute",
-    top: -4,
-    width: 15,
-    height: 15,
-    marginLeft: -7,
-    borderRadius: radius.pill,
-    backgroundColor: colors.lime,
-    borderWidth: 2,
-    borderColor: colors.surface,
-  },
-
-  progressLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-
-  progressLabel: {
+  safetyEmoji: {
     fontFamily: fonts.bodyBold,
+    fontSize: 18,
+    fontWeight: "900",
+    color: colors.ink,
+  },
+
+  safetyContent: {
+    flex: 1,
+    marginLeft: 10,
+  },
+
+  safetyTitle: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    fontWeight: "900",
+    color: colors.ink,
+  },
+
+  safetyDescription: {
+    marginTop: 2,
+    fontFamily: fonts.body,
     fontSize: 8,
-    fontWeight: "800",
-    color: "#8F8F8F",
+    lineHeight: 13,
+    color: colors.muted,
   },
 
   driverCard: {
-    marginTop: 14,
-    padding: 17,
+    marginTop: 11,
+    padding: 15,
     borderRadius: radius.xl,
     backgroundColor: colors.surface,
     borderWidth: 2,
     borderColor: colors.ink,
+    ...shadows.offsetSmall,
   },
 
   driverTop: {
@@ -434,8 +400,8 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 52,
-    height: 52,
+    width: 50,
+    height: 50,
     borderRadius: radius.pill,
     backgroundColor: colors.ink,
     alignItems: "center",
@@ -444,19 +410,19 @@ const styles = StyleSheet.create({
 
   avatarText: {
     fontFamily: fonts.heading,
-    fontSize: 21,
+    fontSize: 20,
     fontWeight: "900",
     color: colors.lime,
   },
 
   driverInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 11,
   },
 
   driverName: {
     fontFamily: fonts.heading,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "900",
     color: colors.ink,
   },
@@ -488,8 +454,8 @@ const styles = StyleSheet.create({
   },
 
   verified: {
-    width: 27,
-    height: 27,
+    width: 26,
+    height: 26,
     borderRadius: radius.pill,
     backgroundColor: colors.limeSoft,
     alignItems: "center",
@@ -506,7 +472,7 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: colors.line,
-    marginVertical: 14,
+    marginVertical: 13,
   },
 
   vehicleRow: {
@@ -539,70 +505,66 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
 
-  vehiclePlate: {
-    marginTop: 3,
-    fontFamily: fonts.bodyMedium,
-    fontSize: 9,
+  vehicleLabel: {
+    marginTop: 2,
+    fontFamily: fonts.body,
+    fontSize: 8,
     color: colors.muted,
   },
 
-  plateBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-    backgroundColor: colors.ink,
+  plateCard: {
+    alignItems: "flex-end",
   },
 
-  plateText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.7,
-    color: colors.lime,
-  },
-
-  messageCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 12,
-    padding: 14,
-    borderRadius: radius.lg,
-    backgroundColor: colors.limeSoft,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-  },
-
-  messageIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    backgroundColor: colors.lime,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  messageEmoji: {
-    fontSize: 18,
-  },
-
-  messageContent: {
-    flex: 1,
-    marginLeft: 11,
-  },
-
-  messageTitle: {
-    fontFamily: fonts.bodyBold,
+  plate: {
+    fontFamily: fonts.heading,
     fontSize: 12,
     fontWeight: "900",
     color: colors.ink,
   },
 
-  messageDescription: {
-    marginTop: 3,
-    fontFamily: fonts.body,
-    fontSize: 9,
-    lineHeight: 14,
+  plateLabel: {
+    marginTop: 2,
+    fontFamily: fonts.bodyBold,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.8,
     color: colors.muted,
+  },
+
+  vibeCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    padding: 13,
+    borderRadius: radius.lg,
+    backgroundColor: colors.ink,
+  },
+
+  vibeMark: {
+    fontFamily: fonts.heading,
+    fontSize: 22,
+    color: colors.lime,
+  },
+
+  vibeContent: {
+    flex: 1,
+    marginLeft: 10,
+  },
+
+  vibeTitle: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    fontWeight: "900",
+    color: colors.surface,
+  },
+
+  vibeDescription: {
+    marginTop: 2,
+    fontFamily: fonts.body,
+    fontSize: 8,
+    lineHeight: 13,
+    color: "#A5A5A5",
   },
 
   actions: {
@@ -610,7 +572,7 @@ const styles = StyleSheet.create({
   },
 
   primaryButton: {
-    minHeight: 62,
+    minHeight: 60,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -667,10 +629,11 @@ const styles = StyleSheet.create({
   },
 
   footer: {
-    marginTop: 9,
+    marginTop: 8,
     textAlign: "center",
     fontFamily: fonts.body,
     fontSize: 8,
+    lineHeight: 12,
     color: colors.muted,
   },
 });

@@ -1,6 +1,7 @@
 import React, {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -11,11 +12,14 @@ export type RideStatus =
   | "finding"
   | "driver_found"
   | "driver_arriving"
+  | "driver_arrived"
   | "in_progress"
   | "completed";
 
 type RideContextValue = {
   rideStatus: RideStatus;
+
+  etaMinutes: number | null;
 
   driverName: string | null;
   driverRating: number | null;
@@ -23,6 +27,7 @@ type RideContextValue = {
   driverPlate: string | null;
 
   startRide: () => void;
+  startDriverArrival: () => void;
   resetRide: () => void;
   cancelRide: () => void;
 };
@@ -37,6 +42,9 @@ export function RideProvider({
 }) {
   const [rideStatus, setRideStatus] =
     useState<RideStatus>("idle");
+
+  const [etaMinutes, setEtaMinutes] =
+    useState<number | null>(null);
 
   const [driverName, setDriverName] =
     useState<string | null>(null);
@@ -71,36 +79,79 @@ export function RideProvider({
 
   const startRide = () => {
     clearMatchingTimer();
-    clearDriver();
 
     setRideStatus("finding");
+    setEtaMinutes(null);
+    clearDriver();
 
     matchingTimer.current = setTimeout(() => {
       setDriverName("Arjun");
       setDriverRating(4.9);
       setDriverVehicle("Honda Activa");
       setDriverPlate("UP 14 AB 4821");
+
       setRideStatus("driver_found");
+      setEtaMinutes(null);
 
       matchingTimer.current = null;
     }, 3000);
   };
 
+  const startDriverArrival = () => {
+    clearMatchingTimer();
+
+    setRideStatus("driver_arriving");
+    setEtaMinutes(3);
+  };
+
+  useEffect(() => {
+    if (
+      rideStatus !== "driver_arriving" ||
+      etaMinutes === null
+    ) {
+      return;
+    }
+
+    if (etaMinutes <= 0) {
+      setRideStatus("driver_arrived");
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setEtaMinutes((current) => {
+        if (current === null) {
+          return null;
+        }
+
+        return Math.max(0, current - 1);
+      });
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [rideStatus, etaMinutes]);
+
   const resetRide = () => {
     clearMatchingTimer();
-    clearDriver();
+
     setRideStatus("idle");
+    setEtaMinutes(null);
+
+    clearDriver();
   };
 
   const cancelRide = () => {
     clearMatchingTimer();
-    clearDriver();
+
     setRideStatus("idle");
+    setEtaMinutes(null);
+
+    clearDriver();
   };
 
   const value = useMemo<RideContextValue>(
     () => ({
       rideStatus,
+      etaMinutes,
 
       driverName,
       driverRating,
@@ -108,11 +159,13 @@ export function RideProvider({
       driverPlate,
 
       startRide,
+      startDriverArrival,
       resetRide,
       cancelRide,
     }),
     [
       rideStatus,
+      etaMinutes,
       driverName,
       driverRating,
       driverVehicle,

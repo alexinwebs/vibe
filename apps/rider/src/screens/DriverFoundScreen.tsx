@@ -31,10 +31,12 @@ export default function DriverFoundScreen() {
     driverRating,
     driverVehicle,
     driverPlate,
+    startDriverArrival,
     cancelRide,
   } = useRide();
 
   const handleStartTracking = () => {
+    startDriverArrival();
     navigation.navigate("DriverArriving");
   };
 
