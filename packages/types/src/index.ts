@@ -1,45 +1,111 @@
+export type RideType =
+  | "BIKE"
+  | "AUTO"
+  | "CAB";
+
 export type RideStatus =
   | "DRAFT"
-  | "DESTINATION_SELECTED"
-  | "RIDE_SELECTED"
-  | "REQUESTED"
-  | "SEARCHING_DRIVER"
+  | "SEARCHING"
   | "DRIVER_ASSIGNED"
   | "DRIVER_ARRIVING"
-  | "DRIVER_AT_PICKUP"
-  | "OTP_VERIFIED"
-  | "RIDE_IN_PROGRESS"
-  | "COMPLETED"
+  | "RIDE_STARTED"
+  | "RIDE_COMPLETED"
   | "CANCELLED";
 
-export type RideType = "BIKE" | "AUTO" | "CAB";
+export type SubscriptionPlan =
+  | "FREE"
+  | "VIBE_PLUS";
+
+export type PaymentStatus =
+  | "PENDING"
+  | "PAID"
+  | "FAILED"
+  | "REFUNDED";
+
+export interface EarningsBreakdown {
+  fare: number;
+
+  driverEarnings: number;
+
+  vibeCommission: number;
+
+  commissionRate: number;
+
+  isVibePlus: boolean;
+}
 
 export interface Ride {
   id: string;
+
   riderId: string;
+
   driverId: string | null;
-
-  pickup: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
-
-  destination: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
 
   rideType: RideType;
 
-  estimatedFare: number;
-  finalFare: number | null;
-
   status: RideStatus;
 
-  otpVerified: boolean;
+  pickupAddress: string;
+
+  destinationAddress: string;
+
+  estimatedFare: number;
+
+  finalFare: number | null;
+
+  earnings: EarningsBreakdown;
 
   createdAt: string;
+
   updatedAt: string;
+}
+
+export interface Rider {
+  id: string;
+
+  name: string;
+
+  phone: string;
+
+  subscriptionPlan: SubscriptionPlan;
+}
+
+export interface Driver {
+  id: string;
+
+  name: string;
+
+  phone: string;
+
+  isOnline: boolean;
+
+  isAvailable: boolean;
+}
+
+export interface Subscription {
+  id: string;
+
+  riderId: string;
+
+  plan: SubscriptionPlan;
+
+  startedAt: string;
+
+  expiresAt: string;
+
+  isActive: boolean;
+}
+
+export interface Payment {
+  id: string;
+
+  rideId: string;
+
+  riderId: string;
+
+  amount: number;
+
+  status: PaymentStatus;
+
+  createdAt: string;
 }
