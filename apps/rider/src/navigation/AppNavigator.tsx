@@ -1,37 +1,78 @@
 import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import RideSelectionScreen from "../screens/RideSelectionScreen";
+import {
+  createNativeStackNavigator,
+} from "@react-navigation/native-stack";
+
 import HomeScreen from "../screens/HomeScreen";
 import DestinationScreen from "../screens/DestinationScreen";
+import RideSelectionScreen from "../screens/RideSelectionScreen";
+import VibePlusScreen from "../screens/VibePlusScreen";
+import ConfirmRideScreen from "../screens/ConfirmRideScreen";
+import FindingDriverScreen from "../screens/FindingDriverScreen";
+import DriverFoundScreen from "../screens/DriverFoundScreen";
+import DriverArrivingScreen from "../screens/DriverArrivingScreen";
 
 export type RootStackParamList = {
   Home: undefined;
   Destination: undefined;
   RideSelection: undefined;
+  VibePlus: undefined;
+  ConfirmRide: undefined;
+  FindingDriver: undefined;
+  DriverFound: undefined;
+  DriverArriving: undefined;
 };
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Stack =
+  createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Home"
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen
-          name="Destination"
-          component={DestinationScreen}
-        />
-	<Stack.Screen
-  name="RideSelection"
-  component={RideSelectionScreen}
-/>
-      </Stack.Navigator>
-    </NavigationContainer>
+    <Stack.Navigator
+      initialRouteName="Home"
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen
+        name="Home"
+        component={HomeScreen}
+      />
+
+      <Stack.Screen
+        name="Destination"
+        component={DestinationScreen}
+      />
+
+      <Stack.Screen
+        name="RideSelection"
+        component={RideSelectionScreen}
+      />
+
+      <Stack.Screen
+        name="VibePlus"
+        component={VibePlusScreen}
+      />
+
+      <Stack.Screen
+        name="ConfirmRide"
+        component={ConfirmRideScreen}
+      />
+
+      <Stack.Screen
+        name="FindingDriver"
+        component={FindingDriverScreen}
+      />
+
+      <Stack.Screen
+        name="DriverFound"
+        component={DriverFoundScreen}
+      />
+
+      <Stack.Screen
+        name="DriverArriving"
+        component={DriverArrivingScreen}
+      />
+    </Stack.Navigator>
   );
 }

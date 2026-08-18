@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -8,127 +8,244 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../navigation/AppNavigator";
 
-const colors = {
-  background: "#F6F6F1",
-  surface: "#FFFFFF",
-  text: "#111111",
-  muted: "#777771",
-  border: "#E7E7E0",
-  lime: "#C9F45B",
+import type { RootStackParamList } from "../navigation/AppNavigator";
+import {
+  colors,
+  fonts,
+  radius,
+  shadows,
+} from "../theme/theme";
+
+type NavigationProp =
+  NativeStackNavigationProp<RootStackParamList>;
+
+type Place = {
+  icon: string;
+  name: string;
+  address: string;
+  time: string;
 };
 
-const places = [
+const places: Place[] = [
   {
     icon: "🏠",
     name: "Home",
     address: "Saved place",
+    time: "12 min",
   },
   {
     icon: "🎓",
     name: "College",
     address: "Saved place",
+    time: "18 min",
   },
   {
     icon: "☕",
     name: "Cafe",
     address: "Saved place",
+    time: "8 min",
   },
 ];
 
 export default function DestinationScreen() {
-    const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [search, setSearch] = useState("");
-  const [destination, setDestination] = useState<string | null>(null);
+  const navigation = useNavigation<NavigationProp>();
 
-  const filteredPlaces = places.filter((place) =>
-    place.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const [search, setSearch] = useState("");
+  const [destination, setDestination] =
+    useState<string | null>(null);
+
+  const filteredPlaces = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) {
+      return places;
+    }
+
+    return places.filter((place) =>
+      place.name.toLowerCase().includes(query),
+    );
+  }, [search]);
+
+  const handleSelectDestination = (
+    placeName: string,
+  ) => {
+    setDestination(placeName);
+  };
+
+  const handleChangeDestination = () => {
+    setDestination(null);
+    setSearch("");
+  };
+
+  const handleContinue = () => {
+    if (!destination) {
+      return;
+    }
+
+    navigation.navigate("RideSelection");
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="dark" />
+
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* HEADER */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.eyebrow}>VIBE DESTINATION</Text>
-            <Text style={styles.title}>Where to?</Text>
+          <View style={styles.headerText}>
+            <Text style={styles.eyebrow}>
+              VIBE
+            </Text>
+
+            <Text style={styles.title}>
+              Where we{"\n"}goin'?
+            </Text>
           </View>
 
-          <View style={styles.closeButton}>
-            <Text style={styles.closeText}>×</Text>
+          <Pressable
+            style={styles.closeButton}
+            onPress={() =>
+              navigation.navigate("Home")
+            }
+          >
+            <Text style={styles.closeText}>
+              ×
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* SEARCH */}
+        <View style={styles.searchSection}>
+          <Text style={styles.searchEyebrow}>
+            DROP THE SPOT
+          </Text>
+
+          <View style={styles.searchBox}>
+            <Text style={styles.searchIcon}>
+              ⌕
+            </Text>
+
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search destination..."
+              placeholderTextColor={colors.muted}
+              style={styles.input}
+              returnKeyType="search"
+              autoCorrect={false}
+            />
           </View>
         </View>
 
-        <View style={styles.searchBox}>
-          <Text style={styles.searchIcon}>⌕</Text>
-
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search destination"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-            returnKeyType="search"
-          />
-        </View>
-
+        {/* SELECTED DESTINATION */}
         {destination ? (
           <View style={styles.selectedCard}>
-            <View style={styles.selectedIcon}>
-              <Text style={styles.selectedIconText}>→</Text>
+            <View style={styles.selectedLeft}>
+              <View style={styles.selectedIcon}>
+                <Text style={styles.selectedIconText}>
+                  →
+                </Text>
+              </View>
+
+              <View style={styles.selectedInfo}>
+                <Text style={styles.selectedLabel}>
+                  DESTINATION
+                </Text>
+
+                <Text style={styles.selectedName}>
+                  {destination}
+                </Text>
+
+                <Text style={styles.selectedStatus}>
+                  Locked in ✓
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.selectedInfo}>
-              <Text style={styles.selectedLabel}>DESTINATION</Text>
-              <Text style={styles.selectedName}>{destination}</Text>
-            </View>
-
-            <Pressable onPress={() => setDestination(null)}>
-              <Text style={styles.changeText}>Change</Text>
+            <Pressable
+              onPress={handleChangeDestination}
+              style={styles.changeButton}
+            >
+              <Text style={styles.changeText}>
+                Change
+              </Text>
             </Pressable>
           </View>
         ) : (
           <>
-            <Text style={styles.sectionTitle}>Recent places</Text>
+            {/* QUICK PLACES */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                Quick spots
+              </Text>
+
+              <Text style={styles.sectionHint}>
+                your usuals
+              </Text>
+            </View>
 
             <View style={styles.places}>
               {filteredPlaces.map((place) => (
                 <Pressable
                   key={place.name}
+                  onPress={() =>
+                    handleSelectDestination(
+                      place.name,
+                    )
+                  }
                   style={({ pressed }) => [
                     styles.placeCard,
                     pressed && styles.placePressed,
                   ]}
-                  onPress={() => setDestination(place.name)}
                 >
                   <View style={styles.placeIcon}>
-                    <Text style={styles.placeEmoji}>{place.icon}</Text>
+                    <Text style={styles.placeEmoji}>
+                      {place.icon}
+                    </Text>
                   </View>
 
                   <View style={styles.placeInfo}>
-                    <Text style={styles.placeName}>{place.name}</Text>
+                    <Text style={styles.placeName}>
+                      {place.name}
+                    </Text>
+
                     <Text style={styles.placeAddress}>
                       {place.address}
                     </Text>
                   </View>
 
-                  <Text style={styles.arrow}>›</Text>
+                  <View style={styles.placeRight}>
+                    <Text style={styles.placeTime}>
+                      {place.time}
+                    </Text>
+
+                    <Text style={styles.arrow}>
+                      ›
+                    </Text>
+                  </View>
                 </Pressable>
               ))}
 
               {filteredPlaces.length === 0 && (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyTitle}>No saved places</Text>
+                  <Text style={styles.emptyEmoji}>
+                    🫠
+                  </Text>
+
+                  <Text style={styles.emptyTitle}>
+                    Nothing here yet.
+                  </Text>
+
                   <Text style={styles.emptyText}>
-                    Try another destination.
+                    Try another spot.
                   </Text>
                 </View>
               )}
@@ -136,14 +253,18 @@ export default function DestinationScreen() {
           </>
         )}
 
+        {/* ROUTE PREVIEW */}
         <View style={styles.routeCard}>
           <View style={styles.routeRow}>
             <View style={styles.pickupDot} />
 
             <View style={styles.routeInfo}>
-              <Text style={styles.routeLabel}>PICKUP</Text>
+              <Text style={styles.routeLabel}>
+                PICKUP
+              </Text>
+
               <Text style={styles.routeValue}>
-                Your current location
+                You are here 📍
               </Text>
             </View>
           </View>
@@ -154,39 +275,65 @@ export default function DestinationScreen() {
             <View
               style={[
                 styles.destinationDot,
-                !destination && styles.destinationDotEmpty,
+                !destination &&
+                  styles.destinationDotEmpty,
               ]}
             />
 
             <View style={styles.routeInfo}>
-              <Text style={styles.routeLabel}>DESTINATION</Text>
+              <Text style={styles.routeLabel}>
+                DESTINATION
+              </Text>
+
               <Text
                 style={[
                   styles.routeValue,
-                  !destination && styles.placeholderValue,
+                  !destination &&
+                    styles.placeholderValue,
                 ]}
               >
-                {destination ?? "Choose a destination"}
+                {destination ??
+                  "Drop the spot →"}
               </Text>
             </View>
           </View>
         </View>
 
+        {/* CTA */}
         <Pressable
-  disabled={!destination}
-  onPress={() => navigation.navigate("RideSelection")}
-  style={({ pressed }) => [
+          disabled={!destination}
+          onPress={handleContinue}
+          style={({ pressed }) => [
             styles.continueButton,
-            !destination && styles.continueDisabled,
-            pressed && destination && styles.continuePressed,
+            !destination &&
+              styles.continueDisabled,
+            pressed &&
+              destination &&
+              styles.continuePressed,
           ]}
         >
-          <Text style={styles.continueText}>Continue</Text>
-          <Text style={styles.continueArrow}>→</Text>
+          <View>
+            <Text style={styles.continueEyebrow}>
+              {destination
+                ? "LOCKED IN"
+                : "PICK A SPOT"}
+            </Text>
+
+            <Text style={styles.continueText}>
+              {destination
+                ? "Let's roll"
+                : "Where we vibin'?"}
+            </Text>
+          </View>
+
+          <Text style={styles.continueArrow}>
+            →
+          </Text>
         </Pressable>
 
         <Text style={styles.footer}>
-          You can change your destination before requesting the ride.
+          Change your destination anytime before
+          you lock in the ride.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -200,104 +347,153 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
     paddingBottom: 40,
   },
 
+  pressed: {
+    opacity: 0.72,
+  },
+
+  /* HEADER */
+
   header: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 26,
+    marginBottom: 24,
+  },
+
+  headerText: {
+    flex: 1,
   },
 
   eyebrow: {
-    fontSize: 10,
-    fontWeight: "900",
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    fontWeight: "800",
     letterSpacing: 2,
     color: colors.muted,
-    marginBottom: 8,
+    marginBottom: 6,
   },
 
   title: {
-    fontSize: 42,
-    lineHeight: 46,
+    fontFamily: fonts.display,
+    fontSize: 40,
+    lineHeight: 42,
     fontWeight: "900",
     letterSpacing: -1.5,
-    color: colors.text,
+    color: colors.ink,
   },
 
   closeButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
     backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.ink,
   },
 
   closeText: {
-    fontSize: 28,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 27,
     lineHeight: 28,
-    color: colors.text,
+    color: colors.ink,
+  },
+
+  /* SEARCH */
+
+  searchSection: {
+    marginBottom: 22,
+  },
+
+  searchEyebrow: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.6,
+    color: colors.muted,
+    marginBottom: 9,
   },
 
   searchBox: {
-    height: 58,
+    height: 60,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.surface,
-    borderRadius: 18,
-    paddingHorizontal: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingHorizontal: 17,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    ...shadows.offsetSmall,
   },
 
   searchIcon: {
-    fontSize: 28,
-    color: colors.text,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 27,
+    color: colors.ink,
     marginRight: 10,
   },
 
   input: {
     flex: 1,
-    fontSize: 16,
-    color: colors.text,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 15,
+    color: colors.ink,
     paddingVertical: 0,
   },
 
-  sectionTitle: {
-    marginTop: 30,
+  /* SECTION */
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "baseline",
     marginBottom: 12,
-    fontSize: 18,
-    fontWeight: "900",
-    color: colors.text,
   },
+
+  sectionTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 19,
+    fontWeight: "900",
+    color: colors.ink,
+  },
+
+  sectionHint: {
+    fontFamily: fonts.bodySemibold,
+    marginLeft: 8,
+    fontSize: 11,
+    color: colors.muted,
+    fontWeight: "600",
+  },
+
+  /* PLACES */
 
   places: {
     gap: 10,
   },
 
   placeCard: {
-    minHeight: 76,
+    minHeight: 78,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.surface,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingHorizontal: 13,
+    borderWidth: 2,
+    borderColor: colors.ink,
   },
 
   placePressed: {
-    opacity: 0.7,
+    opacity: 0.72,
   },
 
   placeIcon: {
-    width: 48,
-    height: 48,
+    width: 50,
+    height: 50,
     borderRadius: 16,
     backgroundColor: colors.background,
     alignItems: "center",
@@ -305,105 +501,164 @@ const styles = StyleSheet.create({
   },
 
   placeEmoji: {
-    fontSize: 22,
+    fontSize: 23,
   },
 
   placeInfo: {
     flex: 1,
-    marginLeft: 14,
+    marginLeft: 13,
   },
 
   placeName: {
-    fontSize: 16,
+    fontFamily: fonts.bodyBold,
+    fontSize: 15,
     fontWeight: "900",
-    color: colors.text,
+    color: colors.ink,
   },
 
   placeAddress: {
+    fontFamily: fonts.body,
     marginTop: 3,
-    fontSize: 12,
+    fontSize: 10,
+    color: colors.muted,
+  },
+
+  placeRight: {
+    alignItems: "flex-end",
+    marginLeft: 8,
+  },
+
+  placeTime: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 10,
+    fontWeight: "800",
     color: colors.muted,
   },
 
   arrow: {
-    fontSize: 28,
-    color: colors.muted,
-    marginLeft: 8,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 27,
+    lineHeight: 28,
+    color: colors.ink,
+    marginTop: 2,
   },
 
+  /* EMPTY */
+
   emptyState: {
-    paddingVertical: 30,
+    paddingVertical: 34,
     alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: colors.ink,
+  },
+
+  emptyEmoji: {
+    fontSize: 28,
+    marginBottom: 8,
   },
 
   emptyTitle: {
+    fontFamily: fonts.bodyBold,
     fontSize: 16,
     fontWeight: "900",
-    color: colors.text,
+    color: colors.ink,
   },
 
   emptyText: {
-    marginTop: 5,
-    fontSize: 13,
+    fontFamily: fonts.body,
+    marginTop: 4,
+    fontSize: 12,
     color: colors.muted,
   },
 
+  /* SELECTED */
+
   selectedCard: {
-    marginTop: 24,
+    minHeight: 84,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: colors.lime,
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: radius.xl,
+    padding: 14,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    ...shadows.offset,
+  },
+
+  selectedLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   selectedIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
-    backgroundColor: colors.text,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
   },
 
   selectedIconText: {
+    fontFamily: fonts.bodyBold,
     color: colors.lime,
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: "900",
   },
 
   selectedInfo: {
     flex: 1,
-    marginLeft: 14,
+    marginLeft: 12,
   },
 
   selectedLabel: {
+    fontFamily: fonts.bodyBold,
     fontSize: 9,
     fontWeight: "900",
-    letterSpacing: 1.5,
-    color: colors.muted,
+    letterSpacing: 1.4,
+    color: "#5F5F59",
   },
 
   selectedName: {
+    fontFamily: fonts.heading,
     marginTop: 3,
     fontSize: 17,
     fontWeight: "900",
-    color: colors.text,
+    color: colors.ink,
+  },
+
+  selectedStatus: {
+    fontFamily: fonts.bodyMedium,
+    marginTop: 2,
+    fontSize: 10,
+    color: "#4F5F2A",
+  },
+
+  changeButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
 
   changeText: {
-    fontSize: 12,
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
     fontWeight: "900",
-    color: colors.text,
+    color: colors.ink,
   },
 
+  /* ROUTE */
+
   routeCard: {
-    marginTop: 28,
+    marginTop: 24,
     backgroundColor: colors.surface,
-    borderRadius: 20,
+    borderRadius: radius.xl,
     padding: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.ink,
   },
 
   routeRow: {
@@ -414,21 +669,23 @@ const styles = StyleSheet.create({
   pickupDot: {
     width: 12,
     height: 12,
-    borderRadius: 6,
-    backgroundColor: "#7BC943",
+    borderRadius: radius.pill,
+    backgroundColor: colors.lime,
     marginHorizontal: 4,
+    borderWidth: 2,
+    borderColor: colors.ink,
   },
 
   destinationDot: {
     width: 12,
     height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.text,
+    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
     marginHorizontal: 4,
   },
 
   destinationDotEmpty: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.line,
   },
 
   routeInfo: {
@@ -437,6 +694,7 @@ const styles = StyleSheet.create({
   },
 
   routeLabel: {
+    fontFamily: fonts.bodyBold,
     fontSize: 9,
     fontWeight: "900",
     letterSpacing: 1.4,
@@ -444,10 +702,11 @@ const styles = StyleSheet.create({
   },
 
   routeValue: {
+    fontFamily: fonts.bodySemibold,
     marginTop: 3,
-    fontSize: 15,
-    fontWeight: "800",
-    color: colors.text,
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.ink,
   },
 
   placeholderValue: {
@@ -457,48 +716,67 @@ const styles = StyleSheet.create({
 
   routeLine: {
     height: 22,
-    width: 1,
-    backgroundColor: colors.border,
-    marginLeft: 10,
+    width: 2,
+    backgroundColor: colors.line,
+    marginLeft: 9,
     marginVertical: 2,
   },
 
+  /* CTA */
+
   continueButton: {
-    marginTop: 18,
-    height: 62,
-    borderRadius: 20,
+    marginTop: 16,
+    minHeight: 70,
+    borderRadius: radius.xl,
     backgroundColor: colors.lime,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 22,
+    paddingHorizontal: 20,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    ...shadows.offset,
   },
 
   continueDisabled: {
     backgroundColor: "#E4E4DE",
+    shadowOpacity: 0,
+    elevation: 0,
   },
 
   continuePressed: {
     opacity: 0.75,
   },
 
-  continueText: {
-    fontSize: 17,
+  continueEyebrow: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 9,
     fontWeight: "900",
-    color: colors.text,
+    letterSpacing: 1.3,
+    color: colors.muted,
+    marginBottom: 2,
+  },
+
+  continueText: {
+    fontFamily: fonts.heading,
+    fontSize: 18,
+    fontWeight: "900",
+    color: colors.ink,
   },
 
   continueArrow: {
-    fontSize: 24,
+    fontFamily: fonts.bodyBold,
+    fontSize: 25,
     fontWeight: "900",
-    color: colors.text,
+    color: colors.ink,
   },
 
   footer: {
+    fontFamily: fonts.body,
     marginTop: 18,
     textAlign: "center",
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 10,
+    lineHeight: 15,
     color: colors.muted,
   },
 });

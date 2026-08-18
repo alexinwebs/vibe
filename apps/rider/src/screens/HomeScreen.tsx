@@ -1,146 +1,265 @@
 import React from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../navigation/AppNavigator";
 import {
   Pressable,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-const colors = {
-  background: "#F6F6F1",
-  surface: "#FFFFFF",
-  text: "#111111",
-  muted: "#777771",
-  border: "#E7E7E0",
-  lime: "#C9F45B",
-  coral: "#FF705F",
-  blue: "#DDEAFF",
-};
+import type { RootStackParamList } from "../navigation/AppNavigator";
+import { useVibePlus } from "../state/VibePlusContext";
+import {
+  colors,
+  fonts,
+  radius,
+  shadows,
+} from "../theme/theme";
+
+type NavigationProp =
+  NativeStackNavigationProp<RootStackParamList, "Home">;
 
 export default function HomeScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NavigationProp>();
+
+  const {
+    isVibePlusActive,
+  } = useVibePlus();
+
+  const openVibePlus = () => {
+    navigation.navigate("VibePlus");
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar style="dark" />
 
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
+        {/* HEADER */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.eyebrow}>VIBE RIDER</Text>
-            <Text style={styles.greeting}>Yo, Alex 👋</Text>
+            <Text style={styles.eyebrow}>
+              VIBE
+            </Text>
+
+            <Text style={styles.greeting}>
+              Yo, Alex 👋
+            </Text>
           </View>
 
           <Pressable style={styles.profileButton}>
-            <Text style={styles.profileText}>A</Text>
+            <Text style={styles.profileText}>
+              A
+            </Text>
           </Pressable>
         </View>
 
-        {/* Main destination card */}
+        {/* HERO */}
         <View style={styles.heroCard}>
-          <View style={styles.heroTop}>
-            <View>
-              <Text style={styles.heroEyebrow}>READY WHEN YOU ARE</Text>
-              <Text style={styles.heroTitle}>Where are you{`\n`}going?</Text>
+          <View style={styles.heroHeader}>
+            <View style={styles.heroText}>
+              <Text style={styles.heroEyebrow}>
+                READY WHEN YOU ARE
+              </Text>
+
+              <Text style={styles.heroTitle}>
+                Where we{"\n"}vibin'?
+              </Text>
             </View>
 
             <View style={styles.sparkle}>
-              <Text style={styles.sparkleText}>✦</Text>
+              <Text style={styles.sparkleText}>
+                ✦
+              </Text>
             </View>
           </View>
 
+          {/* PICKUP */}
           <View style={styles.routeBox}>
-            <View style={styles.routeDot} />
+            <View style={styles.pickupDot} />
+
             <View style={styles.routeContent}>
-              <Text style={styles.routeLabel}>PICKUP</Text>
-              <Text style={styles.routeValue}>Your current location</Text>
+              <Text style={styles.routeLabel}>
+                PICKUP
+              </Text>
+
+              <Text style={styles.routeValue}>
+                You are here 📍
+              </Text>
             </View>
           </View>
 
           <View style={styles.routeLine} />
 
+          {/* DESTINATION */}
           <Pressable
-  style={styles.destinationBox}
-  onPress={() => navigation.navigate("Destination")}
->
+            style={({ pressed }) => [
+              styles.destinationBox,
+              pressed && styles.pressed,
+            ]}
+            onPress={() =>
+              navigation.navigate("Destination")
+            }
+          >
             <View style={styles.destinationIcon}>
-              <Text style={styles.destinationIconText}>→</Text>
+              <Text
+                style={styles.destinationIconText}
+              >
+                →
+              </Text>
             </View>
 
-            <View>
-              <Text style={styles.routeLabel}>DESTINATION</Text>
+            <View style={styles.destinationContent}>
+              <Text style={styles.routeLabel}>
+                DESTINATION
+              </Text>
+
               <Text style={styles.destinationText}>
-                Tap to choose your destination
+                Drop the spot →
               </Text>
             </View>
           </Pressable>
         </View>
 
-        {/* Quick destinations */}
+        {/* VIBE+ */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.plusCard,
+            isVibePlusActive &&
+              styles.plusCardActive,
+            pressed && styles.pressed,
+          ]}
+          onPress={openVibePlus}
+        >
+          <View style={styles.plusLeft}>
+            <View
+              style={[
+                styles.plusBadge,
+                isVibePlusActive &&
+                  styles.plusBadgeActive,
+              ]}
+            >
+              <Text style={styles.plusBadgeText}>
+                VIBE+
+              </Text>
+            </View>
+
+            <View style={styles.plusCopy}>
+              <View style={styles.plusTitleRow}>
+                <Text style={styles.plusTitle}>
+                  {isVibePlusActive
+                    ? "Main character status: ON."
+                    : "Need it ASAP?"}
+                </Text>
+
+                {isVibePlusActive && (
+                  <View style={styles.activeBadge}>
+                    <Text
+                      style={styles.activeBadgeText}
+                    >
+                      ACTIVE
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.plusDescription}>
+                {isVibePlusActive
+                  ? "Priority matching. Driver keeps 100%."
+                  : "Priority matching. Driver keeps 100%."}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.plusArrow}>
+            <Text style={styles.plusArrowText}>
+              →
+            </Text>
+          </View>
+        </Pressable>
+
+        {/* QUICK PICKS */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Quick picks</Text>
-          <Text style={styles.sectionHint}>saved places</Text>
+          <Text style={styles.sectionTitle}>
+            Quick picks
+          </Text>
+
+          <Text style={styles.sectionHint}>
+            saved places
+          </Text>
         </View>
 
         <View style={styles.quickRow}>
-          <QuickPick emoji="🏠" title="Home" subtitle="12 min" />
-          <QuickPick emoji="🎓" title="College" subtitle="18 min" />
-          <QuickPick emoji="☕" title="Cafe" subtitle="8 min" />
+          <QuickPick
+            emoji="🏠"
+            title="Home"
+            subtitle="locked in"
+          />
+
+          <QuickPick
+            emoji="🎓"
+            title="College"
+            subtitle="daily grind"
+          />
+
+          <QuickPick
+            emoji="☕"
+            title="Cafe"
+            subtitle="lil recharge"
+          />
         </View>
 
-        {/* Ride options */}
+        {/* RIDE OPTIONS */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Your vibe</Text>
-          <Text style={styles.sectionHint}>choose your ride</Text>
+          <Text style={styles.sectionTitle}>
+            Your vibe
+          </Text>
+
+          <Text style={styles.sectionHint}>
+            choose your ride
+          </Text>
         </View>
 
-        <View style={styles.rideCard}>
-          <View style={styles.rideIcon}>
-            <Text style={styles.rideEmoji}>🛵</Text>
-          </View>
+        <RidePreview
+          emoji="🛵"
+          name="VIBE Bike"
+          description="zoom zoom"
+          price="₹42"
+          backgroundColor={colors.limeSoft}
+        />
 
-          <View style={styles.rideInfo}>
-            <Text style={styles.rideName}>VIBE Bike</Text>
-            <Text style={styles.rideDescription}>Fast + solo</Text>
-          </View>
-
-          <View style={styles.ridePrice}>
-            <Text style={styles.price}>₹42</Text>
-            <Text style={styles.priceLabel}>est.</Text>
-          </View>
-        </View>
-
-        <View style={styles.rideCard}>
-          <View style={[styles.rideIcon, styles.rideIconCar]}>
-            <Text style={styles.rideEmoji}>🚗</Text>
-          </View>
-
-          <View style={styles.rideInfo}>
-            <Text style={styles.rideName}>VIBE Auto</Text>
-            <Text style={styles.rideDescription}>Easy + comfy</Text>
-          </View>
-
-          <View style={styles.ridePrice}>
-            <Text style={styles.price}>₹68</Text>
-            <Text style={styles.priceLabel}>est.</Text>
-          </View>
-        </View>
+        <RidePreview
+          emoji="🚗"
+          name="VIBE Auto"
+          description="easy mode"
+          price="₹68"
+          backgroundColor="#FFE2DE"
+        />
 
         {/* CTA */}
-        <Pressable style={styles.cta}>
-          <Text style={styles.ctaText}>Choose destination</Text>
-          <Text style={styles.ctaArrow}>↗</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.cta,
+            pressed && styles.pressed,
+          ]}
+          onPress={() =>
+            navigation.navigate("Destination")
+          }
+        >
+          <Text style={styles.ctaText}>
+            Where we vibin'?
+          </Text>
+
+          <Text style={styles.ctaArrow}>
+            ↗
+          </Text>
         </Pressable>
 
         <Text style={styles.footerText}>
@@ -162,10 +281,67 @@ function QuickPick({
 }) {
   return (
     <Pressable style={styles.quickCard}>
-      <Text style={styles.quickEmoji}>{emoji}</Text>
-      <Text style={styles.quickTitle}>{title}</Text>
-      <Text style={styles.quickSubtitle}>{subtitle}</Text>
+      <Text style={styles.quickEmoji}>
+        {emoji}
+      </Text>
+
+      <Text style={styles.quickTitle}>
+        {title}
+      </Text>
+
+      <Text style={styles.quickSubtitle}>
+        {subtitle}
+      </Text>
     </Pressable>
+  );
+}
+
+function RidePreview({
+  emoji,
+  name,
+  description,
+  price,
+  backgroundColor,
+}: {
+  emoji: string;
+  name: string;
+  description: string;
+  price: string;
+  backgroundColor: string;
+}) {
+  return (
+    <View style={styles.rideCard}>
+      <View
+        style={[
+          styles.rideIcon,
+          { backgroundColor },
+        ]}
+      >
+        <Text style={styles.rideEmoji}>
+          {emoji}
+        </Text>
+      </View>
+
+      <View style={styles.rideInfo}>
+        <Text style={styles.rideName}>
+          {name}
+        </Text>
+
+        <Text style={styles.rideDescription}>
+          {description}
+        </Text>
+      </View>
+
+      <View style={styles.ridePrice}>
+        <Text style={styles.price}>
+          {price}
+        </Text>
+
+        <Text style={styles.priceLabel}>
+          est.
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -181,6 +357,12 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
   },
 
+  pressed: {
+    opacity: 0.72,
+  },
+
+  /* HEADER */
+
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -189,6 +371,7 @@ const styles = StyleSheet.create({
   },
 
   eyebrow: {
+    fontFamily: fonts.bodyBold,
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 2,
@@ -197,41 +380,53 @@ const styles = StyleSheet.create({
   },
 
   greeting: {
+    fontFamily: fonts.heading,
     fontSize: 27,
     fontWeight: "900",
-    color: colors.text,
+    color: colors.ink,
     letterSpacing: -1,
   },
 
   profileButton: {
     width: 46,
     height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.text,
+    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
   },
 
   profileText: {
+    fontFamily: fonts.bodyBold,
     color: colors.surface,
     fontSize: 17,
     fontWeight: "800",
   },
 
+  /* HERO */
+
   heroCard: {
-    backgroundColor: colors.text,
+    backgroundColor: colors.ink,
     borderRadius: 28,
     padding: 22,
-    marginBottom: 26,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    ...shadows.offset,
   },
 
-  heroTop: {
+  heroHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 24,
   },
 
+  heroText: {
+    flex: 1,
+  },
+
   heroEyebrow: {
+    fontFamily: fonts.bodyBold,
     color: colors.lime,
     fontSize: 10,
     fontWeight: "900",
@@ -240,6 +435,7 @@ const styles = StyleSheet.create({
   },
 
   heroTitle: {
+    fontFamily: fonts.display,
     color: colors.surface,
     fontSize: 32,
     lineHeight: 34,
@@ -250,16 +446,19 @@ const styles = StyleSheet.create({
   sparkle: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.pill,
     backgroundColor: colors.lime,
     alignItems: "center",
     justifyContent: "center",
   },
 
   sparkleText: {
+    fontFamily: fonts.brand,
     fontSize: 25,
-    color: colors.text,
+    color: colors.ink,
   },
+
+  /* ROUTE */
 
   routeBox: {
     flexDirection: "row",
@@ -269,10 +468,10 @@ const styles = StyleSheet.create({
     padding: 15,
   },
 
-  routeDot: {
+  pickupDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radius.pill,
     backgroundColor: colors.lime,
     marginRight: 13,
   },
@@ -282,6 +481,7 @@ const styles = StyleSheet.create({
   },
 
   routeLabel: {
+    fontFamily: fonts.bodyBold,
     color: "#969690",
     fontSize: 9,
     fontWeight: "900",
@@ -290,6 +490,7 @@ const styles = StyleSheet.create({
   },
 
   routeValue: {
+    fontFamily: fonts.bodySemibold,
     color: colors.surface,
     fontSize: 14,
     fontWeight: "600",
@@ -298,7 +499,7 @@ const styles = StyleSheet.create({
   routeLine: {
     width: 1,
     height: 15,
-    backgroundColor: "#555",
+    backgroundColor: "#555555",
     marginLeft: 20,
   },
 
@@ -313,49 +514,162 @@ const styles = StyleSheet.create({
   destinationIcon: {
     width: 34,
     height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.text,
+    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
 
   destinationIconText: {
+    fontFamily: fonts.bodyBold,
     color: colors.lime,
     fontSize: 18,
     fontWeight: "900",
   },
 
+  destinationContent: {
+    flex: 1,
+  },
+
   destinationText: {
-    color: colors.text,
+    fontFamily: fonts.bodyBold,
+    color: colors.ink,
     fontSize: 14,
     fontWeight: "800",
   },
+
+  /* VIBE+ */
+
+  plusCard: {
+    minHeight: 78,
+    padding: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    ...shadows.offsetSmall,
+  },
+
+  plusCardActive: {
+    backgroundColor: colors.limeSoft,
+  },
+
+  plusLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  plusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    backgroundColor: colors.lime,
+    borderWidth: 1,
+    borderColor: colors.ink,
+  },
+
+  plusBadgeActive: {
+    backgroundColor: colors.ink,
+  },
+
+  plusBadgeText: {
+    fontFamily: fonts.heading,
+    fontSize: 12,
+    fontWeight: "900",
+    color: colors.ink,
+    letterSpacing: 0.4,
+  },
+
+  plusCopy: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  plusTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+
+  plusTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.ink,
+  },
+
+  plusDescription: {
+    marginTop: 3,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 10,
+    color: colors.muted,
+  },
+
+  activeBadge: {
+    marginLeft: 7,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
+  },
+
+  activeBadgeText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+    color: colors.lime,
+  },
+
+  plusArrow: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  plusArrowText: {
+    fontFamily: fonts.bodyBold,
+    color: colors.lime,
+    fontSize: 18,
+  },
+
+  /* SECTIONS */
 
   sectionHeader: {
     flexDirection: "row",
     alignItems: "baseline",
     marginBottom: 12,
-    marginTop: 2,
+    marginTop: 26,
   },
 
   sectionTitle: {
+    fontFamily: fonts.heading,
     fontSize: 19,
     fontWeight: "900",
-    color: colors.text,
+    color: colors.ink,
   },
 
   sectionHint: {
+    fontFamily: fonts.bodySemibold,
     marginLeft: 8,
     fontSize: 11,
     color: colors.muted,
     fontWeight: "600",
   },
 
+  /* QUICK PICKS */
+
   quickRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 26,
   },
 
   quickCard: {
@@ -363,8 +677,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 19,
     padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.ink,
   },
 
   quickEmoji: {
@@ -373,16 +687,20 @@ const styles = StyleSheet.create({
   },
 
   quickTitle: {
+    fontFamily: fonts.bodyBold,
     fontSize: 14,
     fontWeight: "800",
-    color: colors.text,
+    color: colors.ink,
   },
 
   quickSubtitle: {
+    fontFamily: fonts.body,
     marginTop: 3,
     fontSize: 10,
     color: colors.muted,
   },
+
+  /* RIDES */
 
   rideCard: {
     flexDirection: "row",
@@ -391,22 +709,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 13,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.ink,
   },
 
   rideIcon: {
     width: 50,
     height: 50,
     borderRadius: 16,
-    backgroundColor: colors.blue,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 13,
-  },
-
-  rideIconCar: {
-    backgroundColor: "#FFE4DE",
   },
 
   rideEmoji: {
@@ -418,12 +731,14 @@ const styles = StyleSheet.create({
   },
 
   rideName: {
+    fontFamily: fonts.bodyBold,
     fontSize: 15,
     fontWeight: "900",
-    color: colors.text,
+    color: colors.ink,
   },
 
   rideDescription: {
+    fontFamily: fonts.body,
     marginTop: 3,
     fontSize: 11,
     color: colors.muted,
@@ -434,41 +749,51 @@ const styles = StyleSheet.create({
   },
 
   price: {
+    fontFamily: fonts.bodyBold,
     fontSize: 16,
     fontWeight: "900",
-    color: colors.text,
+    color: colors.ink,
   },
 
   priceLabel: {
+    fontFamily: fonts.body,
     fontSize: 9,
     color: colors.muted,
     marginTop: 2,
   },
 
+  /* CTA */
+
   cta: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: colors.coral,
+    backgroundColor: colors.lime,
     borderRadius: 20,
     paddingVertical: 18,
     paddingHorizontal: 20,
-    marginTop: 16,
+    marginTop: 6,
+    borderWidth: 2,
+    borderColor: colors.ink,
+    ...shadows.offset,
   },
 
   ctaText: {
-    color: colors.text,
+    fontFamily: fonts.bodyBold,
+    color: colors.ink,
     fontSize: 16,
     fontWeight: "900",
   },
 
   ctaArrow: {
-    color: colors.text,
+    fontFamily: fonts.bodyBold,
+    color: colors.ink,
     fontSize: 22,
     fontWeight: "900",
   },
 
   footerText: {
+    fontFamily: fonts.bodySemibold,
     textAlign: "center",
     marginTop: 22,
     color: colors.muted,
