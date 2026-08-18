@@ -20,6 +20,7 @@ type RideContextValue = {
   rideStatus: RideStatus;
 
   etaMinutes: number | null;
+  rideMinutes: number;
 
   driverName: string | null;
   driverRating: number | null;
@@ -28,6 +29,7 @@ type RideContextValue = {
 
   startRide: () => void;
   startDriverArrival: () => void;
+  startTrip: () => void;
   resetRide: () => void;
   cancelRide: () => void;
 };
@@ -45,6 +47,9 @@ export function RideProvider({
 
   const [etaMinutes, setEtaMinutes] =
     useState<number | null>(null);
+
+  const [rideMinutes, setRideMinutes] =
+    useState(0);
 
   const [driverName, setDriverName] =
     useState<string | null>(null);
@@ -82,6 +87,8 @@ export function RideProvider({
 
     setRideStatus("finding");
     setEtaMinutes(null);
+    setRideMinutes(0);
+
     clearDriver();
 
     matchingTimer.current = setTimeout(() => {
@@ -102,6 +109,13 @@ export function RideProvider({
 
     setRideStatus("driver_arriving");
     setEtaMinutes(3);
+    setRideMinutes(0);
+  };
+
+  const startTrip = () => {
+    setEtaMinutes(null);
+    setRideMinutes(0);
+    setRideStatus("in_progress");
   };
 
   useEffect(() => {
@@ -130,11 +144,24 @@ export function RideProvider({
     return () => clearTimeout(timer);
   }, [rideStatus, etaMinutes]);
 
+  useEffect(() => {
+    if (rideStatus !== "in_progress") {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setRideMinutes((current) => current + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [rideStatus]);
+
   const resetRide = () => {
     clearMatchingTimer();
 
     setRideStatus("idle");
     setEtaMinutes(null);
+    setRideMinutes(0);
 
     clearDriver();
   };
@@ -144,6 +171,7 @@ export function RideProvider({
 
     setRideStatus("idle");
     setEtaMinutes(null);
+    setRideMinutes(0);
 
     clearDriver();
   };
@@ -152,6 +180,7 @@ export function RideProvider({
     () => ({
       rideStatus,
       etaMinutes,
+      rideMinutes,
 
       driverName,
       driverRating,
@@ -160,12 +189,14 @@ export function RideProvider({
 
       startRide,
       startDriverArrival,
+      startTrip,
       resetRide,
       cancelRide,
     }),
     [
       rideStatus,
       etaMinutes,
+      rideMinutes,
       driverName,
       driverRating,
       driverVehicle,

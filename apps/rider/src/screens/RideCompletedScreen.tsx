@@ -22,34 +22,42 @@ import {
 type NavigationProp =
   NativeStackNavigationProp<RootStackParamList>;
 
-export default function DriverArrivedScreen() {
+export default function RideCompletedScreen() {
   const navigation =
     useNavigation<NavigationProp>();
 
   const {
+    rideMinutes,
     driverName,
     driverRating,
     driverVehicle,
     driverPlate,
-    startTrip,
-    cancelRide,
+    resetRide,
   } = useRide();
 
-  const handleStartRide = () => {
-    startTrip();
-    navigation.replace("RideInProgress");
+  const handleDone = () => {
+    resetRide();
+    navigation.replace("Home");
   };
 
-  const handleCancel = () => {
-    cancelRide();
-    navigation.navigate("Home");
+  const handleRate = () => {
+    // Rating flow will be added later.
   };
+
+  const minutes = String(
+    Math.floor(rideMinutes / 60),
+  ).padStart(2, "0");
+
+  const seconds = String(
+    rideMinutes % 60,
+  ).padStart(2, "0");
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
 
       <View style={styles.container}>
+        {/* HEADER */}
         <View style={styles.header}>
           <View>
             <Text style={styles.eyebrow}>
@@ -57,55 +65,64 @@ export default function DriverArrivedScreen() {
             </Text>
 
             <Text style={styles.headerTitle}>
-              They're here.
+              Ride complete.
             </Text>
           </View>
 
-          <View style={styles.arrivedBadge}>
-            <View style={styles.badgeDot} />
-
-            <Text style={styles.badgeText}>
-              ARRIVED
+          <View style={styles.doneBadge}>
+            <Text style={styles.doneBadgeText}>
+              DONE
             </Text>
           </View>
         </View>
 
+        {/* HERO */}
         <View style={styles.hero}>
           <View style={styles.heroCircle}>
             <Text style={styles.heroEmoji}>
-              👀
+              ✦
             </Text>
           </View>
 
           <Text style={styles.heroTitle}>
-            Your ride is here.
+            You made it.
           </Text>
 
           <Text style={styles.heroDescription}>
-            Before you hop in, match the vehicle
-            and plate with the details below.
+            Smooth ride. No drama. That's a
+            W in our books.
           </Text>
         </View>
 
-        <View style={styles.safetyCard}>
-          <View style={styles.safetyIcon}>
-            <Text style={styles.safetyEmoji}>
-              ✓
+        {/* SUMMARY */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>
+              RIDE TIME
+            </Text>
+
+            <Text style={styles.summaryValue}>
+              {minutes}:{seconds}
             </Text>
           </View>
 
-          <View style={styles.safetyContent}>
-            <Text style={styles.safetyTitle}>
-              Quick safety check
+          <View style={styles.summaryDivider} />
+
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>
+              DRIVER
             </Text>
 
-            <Text style={styles.safetyDescription}>
-              Confirm your driver's vehicle and
-              plate before entering.
+            <Text
+              style={styles.summaryValue}
+              numberOfLines={1}
+            >
+              {driverName ?? "Arjun"}
             </Text>
           </View>
         </View>
 
+        {/* DRIVER CARD */}
         <View style={styles.driverCard}>
           <View style={styles.driverTop}>
             <View style={styles.avatar}>
@@ -129,7 +146,7 @@ export default function DriverArrivedScreen() {
                 </Text>
 
                 <Text style={styles.ratingLabel}>
-                  top rated
+                  rider rating
                 </Text>
               </View>
             </View>
@@ -155,55 +172,61 @@ export default function DriverArrivedScreen() {
                 {driverVehicle ?? "Honda Activa"}
               </Text>
 
-              <Text style={styles.vehicleLabel}>
-                Vehicle
-              </Text>
-            </View>
-
-            <View style={styles.plateCard}>
-              <Text style={styles.plate}>
+              <Text style={styles.vehiclePlate}>
                 {driverPlate ?? "UP 14 AB 4821"}
               </Text>
-
-              <Text style={styles.plateLabel}>
-                PLATE
-              </Text>
             </View>
+
+            <Text style={styles.completedText}>
+              COMPLETED
+            </Text>
           </View>
         </View>
 
-        <View style={styles.vibeCard}>
-          <Text style={styles.vibeMark}>
-            ✦
+        {/* RATING */}
+        <View style={styles.ratingCard}>
+          <Text style={styles.ratingTitle}>
+            How was the vibe?
           </Text>
 
-          <View style={styles.vibeContent}>
-            <Text style={styles.vibeTitle}>
-              We have a match.
-            </Text>
+          <Text style={styles.ratingDescription}>
+            Give your driver some love.
+          </Text>
 
-            <Text style={styles.vibeDescription}>
-              Plate matches? Perfect. Time to
-              get moving.
-            </Text>
+          <View style={styles.stars}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Pressable
+                key={star}
+                onPress={handleRate}
+                style={({ pressed }) => [
+                  styles.starButton,
+                  pressed && styles.starPressed,
+                ]}
+              >
+                <Text style={styles.starIcon}>
+                  ★
+                </Text>
+              </Pressable>
+            ))}
           </View>
         </View>
 
+        {/* ACTION */}
         <View style={styles.actions}>
           <Pressable
             style={({ pressed }) => [
               styles.primaryButton,
               pressed && styles.pressed,
             ]}
-            onPress={handleStartRide}
+            onPress={handleDone}
           >
             <View>
               <Text style={styles.primaryEyebrow}>
-                DRIVER VERIFIED
+                RIDE COMPLETE
               </Text>
 
               <Text style={styles.primaryText}>
-                Start my ride
+                Back to VIBE
               </Text>
             </View>
 
@@ -211,23 +234,11 @@ export default function DriverArrivedScreen() {
               →
             </Text>
           </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.pressed,
-            ]}
-            onPress={handleCancel}
-          >
-            <Text style={styles.secondaryText}>
-              Cancel ride
-            </Text>
-          </Pressable>
         </View>
 
         <Text style={styles.footer}>
-          If anything feels wrong, don't get in.
-          Your safety comes first.
+          Thanks for riding with VIBE. Stay
+          iconic.
         </Text>
       </View>
     </SafeAreaView>
@@ -269,9 +280,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
 
-  arrivedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
+  doneBadge: {
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderRadius: radius.pill,
@@ -280,19 +289,11 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
 
-  badgeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: radius.pill,
-    backgroundColor: colors.ink,
-  },
-
-  badgeText: {
-    marginLeft: 5,
+  doneBadgeText: {
     fontFamily: fonts.bodyBold,
-    fontSize: 7,
+    fontSize: 8,
     fontWeight: "900",
-    letterSpacing: 0.8,
+    letterSpacing: 1,
     color: colors.ink,
   },
 
@@ -302,8 +303,8 @@ const styles = StyleSheet.create({
   },
 
   heroCircle: {
-    width: 72,
-    height: 72,
+    width: 68,
+    height: 68,
     borderRadius: radius.pill,
     backgroundColor: colors.lime,
     alignItems: "center",
@@ -314,11 +315,14 @@ const styles = StyleSheet.create({
   },
 
   heroEmoji: {
+    fontFamily: fonts.heading,
     fontSize: 32,
+    fontWeight: "900",
+    color: colors.ink,
   },
 
   heroTitle: {
-    marginTop: 16,
+    marginTop: 15,
     fontFamily: fonts.display,
     fontSize: 31,
     lineHeight: 34,
@@ -337,51 +341,42 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
 
-  safetyCard: {
+  summaryCard: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 16,
-    padding: 13,
-    borderRadius: radius.lg,
-    backgroundColor: colors.limeSoft,
-    borderWidth: 1.5,
+    marginTop: 17,
+    padding: 15,
+    borderRadius: radius.xl,
+    backgroundColor: colors.ink,
+    borderWidth: 2,
     borderColor: colors.ink,
   },
 
-  safetyIcon: {
-    width: 39,
-    height: 39,
-    borderRadius: radius.md,
-    backgroundColor: colors.lime,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  safetyEmoji: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 18,
-    fontWeight: "900",
-    color: colors.ink,
-  },
-
-  safetyContent: {
+  summaryItem: {
     flex: 1,
-    marginLeft: 10,
   },
 
-  safetyTitle: {
+  summaryDivider: {
+    width: 1,
+    height: 35,
+    marginHorizontal: 12,
+    backgroundColor: "#555555",
+  },
+
+  summaryLabel: {
     fontFamily: fonts.bodyBold,
-    fontSize: 11,
+    fontSize: 7,
     fontWeight: "900",
-    color: colors.ink,
+    letterSpacing: 1,
+    color: colors.lime,
   },
 
-  safetyDescription: {
-    marginTop: 2,
-    fontFamily: fonts.body,
-    fontSize: 8,
-    lineHeight: 13,
-    color: colors.muted,
+  summaryValue: {
+    marginTop: 4,
+    fontFamily: fonts.heading,
+    fontSize: 16,
+    fontWeight: "900",
+    color: colors.surface,
   },
 
   driverCard: {
@@ -391,7 +386,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 2,
     borderColor: colors.ink,
-    ...shadows.offsetSmall,
   },
 
   driverTop: {
@@ -505,66 +499,68 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
 
-  vehicleLabel: {
-    marginTop: 2,
-    fontFamily: fonts.body,
-    fontSize: 8,
+  vehiclePlate: {
+    marginTop: 3,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 9,
     color: colors.muted,
   },
 
-  plateCard: {
-    alignItems: "flex-end",
+  completedText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.6,
+    color: colors.muted,
   },
 
-  plate: {
-    fontFamily: fonts.heading,
+  ratingCard: {
+    marginTop: 10,
+    padding: 14,
+    borderRadius: radius.lg,
+    backgroundColor: colors.limeSoft,
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+  },
+
+  ratingTitle: {
+    fontFamily: fonts.bodyBold,
     fontSize: 12,
     fontWeight: "900",
     color: colors.ink,
   },
 
-  plateLabel: {
-    marginTop: 2,
-    fontFamily: fonts.bodyBold,
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-    color: colors.muted,
-  },
-
-  vibeCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
-    padding: 13,
-    borderRadius: radius.lg,
-    backgroundColor: colors.ink,
-  },
-
-  vibeMark: {
-    fontFamily: fonts.heading,
-    fontSize: 22,
-    color: colors.lime,
-  },
-
-  vibeContent: {
-    flex: 1,
-    marginLeft: 10,
-  },
-
-  vibeTitle: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 11,
-    fontWeight: "900",
-    color: colors.surface,
-  },
-
-  vibeDescription: {
+  ratingDescription: {
     marginTop: 2,
     fontFamily: fonts.body,
     fontSize: 8,
-    lineHeight: 13,
-    color: "#A5A5A5",
+    color: colors.muted,
+  },
+
+  stars: {
+    flexDirection: "row",
+    marginTop: 7,
+  },
+
+  starButton: {
+    width: 39,
+    height: 34,
+    marginRight: 6,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.ink,
+  },
+
+  starIcon: {
+    fontSize: 17,
+    color: colors.ink,
+  },
+
+  starPressed: {
+    opacity: 0.6,
   },
 
   actions: {
@@ -604,24 +600,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: 20,
     color: colors.lime,
-  },
-
-  secondaryButton: {
-    minHeight: 46,
-    marginTop: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.xl,
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.ink,
-  },
-
-  secondaryText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 12,
-    fontWeight: "900",
-    color: colors.ink,
   },
 
   pressed: {
