@@ -28,18 +28,24 @@ export type Destination = {
   address?: string;
 };
 
+export type RiderRating = 1 | 2 | 3 | 4 | 5;
+
 export type CompletedRide = {
   id: string;
   destination: Destination;
   rideType: SelectedRide["type"];
   fare: number;
   eta: number;
+
   driverName: string;
   driverRating: number;
   driverVehicle: string;
   driverPlate: string;
+
   durationSeconds: number;
   completedAt: string;
+
+  riderRating: RiderRating | null;
 };
 
 type RideContextValue = {
@@ -56,6 +62,7 @@ type RideContextValue = {
   driverVehicle: string | null;
   driverPlate: string | null;
 
+  currentCompletedRideId: string | null;
   completedRides: CompletedRide[];
 
   setDestination: (
@@ -72,6 +79,10 @@ type RideContextValue = {
   completeRide: () => void;
 
   saveCompletedRide: () => void;
+
+  rateCurrentRide: (
+    rating: RiderRating,
+  ) => void;
 
   resetRide: () => void;
   cancelRide: () => void;
@@ -114,6 +125,11 @@ export function RideProvider({
 
   const [driverPlate, setDriverPlate] =
     useState<string | null>(null);
+
+  const [
+    currentCompletedRideId,
+    setCurrentCompletedRideId,
+  ] = useState<string | null>(null);
 
   const [completedRides, setCompletedRides] =
     useState<CompletedRide[]>([]);
@@ -165,8 +181,17 @@ export function RideProvider({
           Array.isArray(parsedHistory) &&
           mounted
         ) {
+          const normalizedHistory =
+            parsedHistory.map(
+              (ride: CompletedRide) => ({
+                ...ride,
+                riderRating:
+                  ride.riderRating ?? null,
+              }),
+            );
+
           setCompletedRides(
-            parsedHistory as CompletedRide[],
+            normalizedHistory,
           );
         }
       } catch (error) {
@@ -216,6 +241,7 @@ export function RideProvider({
     setRideStatus("finding");
     setEtaMinutes(null);
     setRideMinutes(0);
+    setCurrentCompletedRideId(null);
 
     clearDriver();
 
@@ -265,6 +291,10 @@ export function RideProvider({
       return;
     }
 
+    if (currentCompletedRideId) {
+      return;
+    }
+
     const completedRide: CompletedRide = {
       id: `${Date.now()}-${Math.random()
         .toString(36)
@@ -286,12 +316,37 @@ export function RideProvider({
 
       durationSeconds: rideMinutes,
       completedAt: new Date().toISOString(),
+
+      riderRating: null,
     };
+
+    setCurrentCompletedRideId(
+      completedRide.id,
+    );
 
     setCompletedRides((current) => [
       completedRide,
       ...current,
     ]);
+  };
+
+  const rateCurrentRide = (
+    rating: RiderRating,
+  ) => {
+    if (!currentCompletedRideId) {
+      return;
+    }
+
+    setCompletedRides((current) =>
+      current.map((ride) =>
+        ride.id === currentCompletedRideId
+          ? {
+              ...ride,
+              riderRating: rating,
+            }
+          : ride,
+      ),
+    );
   };
 
   useEffect(() => {
@@ -326,7 +381,9 @@ export function RideProvider({
     }
 
     const timer = setInterval(() => {
-      setRideMinutes((current) => current + 1);
+      setRideMinutes(
+        (current) => current + 1,
+      );
     }, 1000);
 
     return () => clearInterval(timer);
@@ -342,6 +399,8 @@ export function RideProvider({
     setDestination(null);
     setSelectedRide(null);
 
+    setCurrentCompletedRideId(null);
+
     clearDriver();
   };
 
@@ -354,6 +413,8 @@ export function RideProvider({
 
     setDestination(null);
     setSelectedRide(null);
+
+    setCurrentCompletedRideId(null);
 
     clearDriver();
   };
@@ -373,6 +434,7 @@ export function RideProvider({
       driverVehicle,
       driverPlate,
 
+      currentCompletedRideId,
       completedRides,
 
       setDestination,
@@ -384,6 +446,7 @@ export function RideProvider({
       completeRide,
 
       saveCompletedRide,
+      rateCurrentRide,
 
       resetRide,
       cancelRide,
@@ -398,6 +461,7 @@ export function RideProvider({
       driverRating,
       driverVehicle,
       driverPlate,
+      currentCompletedRideId,
       completedRides,
     ],
   );

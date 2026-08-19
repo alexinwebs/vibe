@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -11,7 +11,10 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import type { RootStackParamList } from "../navigation/AppNavigator";
-import { useRide } from "../state/RideContext";
+import {
+  RiderRating,
+  useRide,
+} from "../state/RideContext";
 import {
   colors,
   fonts,
@@ -28,22 +31,63 @@ export default function RideCompletedScreen() {
 
   const {
     rideMinutes,
+    selectedRide,
     driverName,
     driverRating,
     driverVehicle,
     driverPlate,
+    currentCompletedRideId,
+    completedRides,
     saveCompletedRide,
+    rateCurrentRide,
     resetRide,
   } = useRide();
 
-  const handleDone = () => {
+  const [selectedRating, setSelectedRating] =
+    useState<RiderRating | null>(null);
+
+  useEffect(() => {
+    if (currentCompletedRideId) {
+      return;
+    }
+
     saveCompletedRide();
-    resetRide();
-    navigation.replace("Home");
+  }, [
+    currentCompletedRideId,
+    saveCompletedRide,
+  ]);
+
+  useEffect(() => {
+    if (!currentCompletedRideId) {
+      return;
+    }
+
+    const currentRide =
+      completedRides.find(
+        (ride) =>
+          ride.id === currentCompletedRideId,
+      );
+
+    if (currentRide?.riderRating) {
+      setSelectedRating(
+        currentRide.riderRating,
+      );
+    }
+  }, [
+    currentCompletedRideId,
+    completedRides,
+  ]);
+
+  const handleRate = (
+    rating: RiderRating,
+  ) => {
+    setSelectedRating(rating);
+    rateCurrentRide(rating);
   };
 
-  const handleRate = () => {
-    // Rating flow will be added later.
+  const handleDone = () => {
+    resetRide();
+    navigation.replace("Home");
   };
 
   const minutes = String(
@@ -53,6 +97,20 @@ export default function RideCompletedScreen() {
   const seconds = String(
     rideMinutes % 60,
   ).padStart(2, "0");
+
+  const vehicleEmoji =
+    selectedRide?.type === "VIBE Comfort"
+      ? "🛺"
+      : selectedRide?.type === "VIBE XL"
+        ? "🚕"
+        : "🛵";
+
+  const vehicleName =
+    selectedRide?.type === "VIBE Comfort"
+      ? "Auto Rickshaw"
+      : selectedRide?.type === "VIBE XL"
+        ? "VIBE Cab"
+        : driverVehicle ?? "Honda Activa";
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -148,7 +206,7 @@ export default function RideCompletedScreen() {
                 </Text>
 
                 <Text style={styles.ratingLabel}>
-                  rider rating
+                  driver rating
                 </Text>
               </View>
             </View>
@@ -165,13 +223,13 @@ export default function RideCompletedScreen() {
           <View style={styles.vehicleRow}>
             <View style={styles.vehicleIcon}>
               <Text style={styles.vehicleEmoji}>
-                🛵
+                {vehicleEmoji}
               </Text>
             </View>
 
             <View style={styles.vehicleInfo}>
               <Text style={styles.vehicleName}>
-                {driverVehicle ?? "Honda Activa"}
+                {vehicleName}
               </Text>
 
               <Text style={styles.vehiclePlate}>
@@ -196,21 +254,49 @@ export default function RideCompletedScreen() {
           </Text>
 
           <View style={styles.stars}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Pressable
-                key={star}
-                onPress={handleRate}
-                style={({ pressed }) => [
-                  styles.starButton,
-                  pressed && styles.starPressed,
-                ]}
-              >
-                <Text style={styles.starIcon}>
-                  ★
-                </Text>
-              </Pressable>
-            ))}
+            {[1, 2, 3, 4, 5].map(
+              (star) => {
+                const rating =
+                  star as RiderRating;
+
+                const isSelected =
+                  selectedRating !== null &&
+                  rating <= selectedRating;
+
+                return (
+                  <Pressable
+                    key={star}
+                    onPress={() =>
+                      handleRate(rating)
+                    }
+                    style={({ pressed }) => [
+                      styles.starButton,
+                      isSelected &&
+                        styles.starButtonSelected,
+                      pressed &&
+                        styles.starPressed,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.starIcon,
+                        isSelected &&
+                          styles.starIconSelected,
+                      ]}
+                    >
+                      ★
+                    </Text>
+                  </Pressable>
+                );
+              },
+            )}
           </View>
+
+          <Text style={styles.ratingHint}>
+            {selectedRating
+              ? `${selectedRating}/5 — thanks for the feedback.`
+              : "Tap a star to rate your ride."}
+          </Text>
         </View>
 
         {/* ACTION */}
@@ -556,13 +642,28 @@ const styles = StyleSheet.create({
     borderColor: colors.ink,
   },
 
+  starButtonSelected: {
+    backgroundColor: colors.ink,
+  },
+
   starIcon: {
     fontSize: 17,
     color: colors.ink,
   },
 
+  starIconSelected: {
+    color: colors.lime,
+  },
+
   starPressed: {
     opacity: 0.6,
+  },
+
+  ratingHint: {
+    marginTop: 8,
+    fontFamily: fonts.body,
+    fontSize: 8,
+    color: colors.muted,
   },
 
   actions: {

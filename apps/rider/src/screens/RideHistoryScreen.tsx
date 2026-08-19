@@ -102,6 +102,37 @@ function formatDuration(
   return `${minutes}m ${remainingSeconds}s`;
 }
 
+function RatingDisplay({
+  rating,
+}: {
+  rating: CompletedRide["riderRating"];
+}) {
+  if (!rating) {
+    return (
+      <View style={styles.unrated}>
+        <Text style={styles.unratedText}>
+          NOT RATED
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.ratingDisplay}>
+      <Text style={styles.ratingStars}>
+        {"★".repeat(rating)}
+        <Text style={styles.emptyStars}>
+          {"★".repeat(5 - rating)}
+        </Text>
+      </Text>
+
+      <Text style={styles.ratingNumber}>
+        {rating}/5
+      </Text>
+    </View>
+  );
+}
+
 function RideHistoryCard({
   ride,
 }: {
@@ -115,6 +146,7 @@ function RideHistoryCard({
 
   return (
     <View style={styles.rideCard}>
+      {/* TOP */}
       <View style={styles.cardTop}>
         <View style={styles.vehicleIcon}>
           <Text style={styles.vehicleEmoji}>
@@ -150,6 +182,7 @@ function RideHistoryCard({
 
       <View style={styles.divider} />
 
+      {/* DETAILS */}
       <View style={styles.detailsRow}>
         <View style={styles.detail}>
           <Text style={styles.detailLabel}>
@@ -163,7 +196,7 @@ function RideHistoryCard({
 
         <View style={styles.detail}>
           <Text style={styles.detailLabel}>
-            RATING
+            DRIVER RATING
           </Text>
 
           <Text style={styles.detailValue}>
@@ -184,6 +217,24 @@ function RideHistoryCard({
         </View>
       </View>
 
+      {/* RIDER RATING */}
+      <View style={styles.riderRatingSection}>
+        <View>
+          <Text style={styles.riderRatingLabel}>
+            YOUR RATING
+          </Text>
+
+          <RatingDisplay
+            rating={ride.riderRating}
+          />
+        </View>
+
+        <Text style={styles.feedbackMark}>
+          ✦
+        </Text>
+      </View>
+
+      {/* FOOTER */}
       <View style={styles.bottomRow}>
         <Text style={styles.date}>
           {formatDate(ride.completedAt)}
@@ -246,7 +297,7 @@ export default function RideHistoryScreen() {
           </View>
         </View>
 
-        {/* CONTENT */}
+        {/* EMPTY STATE */}
         {completedRides.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
@@ -287,6 +338,7 @@ export default function RideHistoryScreen() {
           </View>
         ) : (
           <>
+            {/* SUMMARY */}
             <View style={styles.summary}>
               <View>
                 <Text style={styles.summaryEyebrow}>
@@ -307,6 +359,7 @@ export default function RideHistoryScreen() {
               </Text>
             </View>
 
+            {/* LIST */}
             <ScrollView
               style={styles.scroll}
               contentContainerStyle={
@@ -345,6 +398,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
+
+  /* HEADER */
 
   header: {
     flexDirection: "row",
@@ -409,6 +464,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
 
+  /* SUMMARY */
+
   summary: {
     flexDirection: "row",
     alignItems: "center",
@@ -444,6 +501,8 @@ const styles = StyleSheet.create({
     color: colors.lime,
   },
 
+  /* LIST */
+
   scroll: {
     flex: 1,
     marginTop: 14,
@@ -452,6 +511,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 10,
   },
+
+  /* CARD */
 
   rideCard: {
     marginBottom: 11,
@@ -527,6 +588,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.line,
   },
 
+  /* DETAILS */
+
   detailsRow: {
     flexDirection: "row",
   },
@@ -550,6 +613,72 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.ink,
   },
+
+  /* RIDER RATING */
+
+  riderRatingSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 13,
+    padding: 10,
+    borderRadius: radius.md,
+    backgroundColor: colors.limeSoft,
+  },
+
+  riderRatingLabel: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 6,
+    fontWeight: "900",
+    letterSpacing: 0.9,
+    color: colors.muted,
+  },
+
+  ratingDisplay: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+
+  ratingStars: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    fontWeight: "900",
+    color: colors.ink,
+    letterSpacing: 1,
+  },
+
+  emptyStars: {
+    color: "#C8C8C2",
+  },
+
+  ratingNumber: {
+    marginLeft: 7,
+    fontFamily: fonts.bodyBold,
+    fontSize: 8,
+    fontWeight: "900",
+    color: colors.ink,
+  },
+
+  unrated: {
+    marginTop: 4,
+  },
+
+  unratedText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+    color: colors.muted,
+  },
+
+  feedbackMark: {
+    fontFamily: fonts.heading,
+    fontSize: 22,
+    color: colors.ink,
+  },
+
+  /* FOOTER */
 
   bottomRow: {
     flexDirection: "row",
@@ -578,6 +707,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     color: colors.ink,
   },
+
+  /* EMPTY */
 
   emptyState: {
     flex: 1,
