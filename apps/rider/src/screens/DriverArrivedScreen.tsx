@@ -27,6 +27,7 @@ export default function DriverArrivedScreen() {
     useNavigation<NavigationProp>();
 
   const {
+    selectedRide,
     driverName,
     driverRating,
     driverVehicle,
@@ -44,6 +45,20 @@ export default function DriverArrivedScreen() {
     cancelRide();
     navigation.navigate("Home");
   };
+
+  const vehicleEmoji =
+    selectedRide?.type === "VIBE Comfort"
+      ? "🛺"
+      : selectedRide?.type === "VIBE XL"
+        ? "🚕"
+        : "🛵";
+
+  const vehicleName =
+    selectedRide?.type === "VIBE Comfort"
+      ? "Auto Rickshaw"
+      : selectedRide?.type === "VIBE XL"
+        ? "VIBE Cab"
+        : driverVehicle ?? "Honda Activa";
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -146,13 +161,13 @@ export default function DriverArrivedScreen() {
           <View style={styles.vehicleRow}>
             <View style={styles.vehicleIcon}>
               <Text style={styles.vehicleEmoji}>
-                🛵
+                {vehicleEmoji}
               </Text>
             </View>
 
             <View style={styles.vehicleInfo}>
               <Text style={styles.vehicleName}>
-                {driverVehicle ?? "Honda Activa"}
+                {vehicleName}
               </Text>
 
               <Text style={styles.vehicleLabel}>

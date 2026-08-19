@@ -28,14 +28,17 @@ export default function RideInProgressScreen() {
 
   const {
     rideMinutes,
+    selectedRide,
     driverName,
     driverRating,
     driverVehicle,
     driverPlate,
+    completeRide,
     cancelRide,
   } = useRide();
 
   const handleEndRide = () => {
+    completeRide();
     navigation.replace("RideCompleted");
   };
 
@@ -51,6 +54,20 @@ export default function RideInProgressScreen() {
   const seconds = String(
     rideMinutes % 60,
   ).padStart(2, "0");
+
+  const vehicleEmoji =
+    selectedRide?.type === "VIBE Comfort"
+      ? "🛺"
+      : selectedRide?.type === "VIBE XL"
+        ? "🚕"
+        : "🛵";
+
+  const vehicleName =
+    selectedRide?.type === "VIBE Comfort"
+      ? "Auto Rickshaw"
+      : selectedRide?.type === "VIBE XL"
+        ? "VIBE Cab"
+        : driverVehicle ?? "Honda Activa";
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -93,7 +110,7 @@ export default function RideInProgressScreen() {
 
             <View style={styles.rideIcon}>
               <Text style={styles.rideEmoji}>
-                🛵
+                {vehicleEmoji}
               </Text>
             </View>
           </View>
@@ -170,13 +187,13 @@ export default function RideInProgressScreen() {
           <View style={styles.vehicleRow}>
             <View style={styles.vehicleIcon}>
               <Text style={styles.vehicleEmoji}>
-                🛵
+                {vehicleEmoji}
               </Text>
             </View>
 
             <View style={styles.vehicleInfo}>
               <Text style={styles.vehicleName}>
-                {driverVehicle ?? "Honda Activa"}
+                {vehicleName}
               </Text>
 
               <Text style={styles.vehiclePlate}>

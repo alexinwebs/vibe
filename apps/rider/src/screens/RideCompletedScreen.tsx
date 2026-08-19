@@ -32,10 +32,12 @@ export default function RideCompletedScreen() {
     driverRating,
     driverVehicle,
     driverPlate,
+    saveCompletedRide,
     resetRide,
   } = useRide();
 
   const handleDone = () => {
+    saveCompletedRide();
     resetRide();
     navigation.replace("Home");
   };

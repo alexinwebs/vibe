@@ -27,6 +27,7 @@ export default function DriverFoundScreen() {
     useNavigation<NavigationProp>();
 
   const {
+    selectedRide,
     driverName,
     driverRating,
     driverVehicle,
@@ -45,11 +46,37 @@ export default function DriverFoundScreen() {
     navigation.navigate("Home");
   };
 
+  const rideType = selectedRide?.type;
+
+  const vehicleEmoji =
+    rideType === "VIBE Comfort"
+      ? "🛺"
+      : rideType === "VIBE XL"
+        ? "🚕"
+        : "🛵";
+
+  const vehicleName =
+    rideType === "VIBE Comfort"
+      ? "Auto Rickshaw"
+      : rideType === "VIBE XL"
+        ? "VIBE Cab"
+        : driverVehicle ?? "Honda Activa";
+
+  const vehicleDescription =
+    rideType === "VIBE Comfort"
+      ? "Auto"
+      : rideType === "VIBE XL"
+        ? "Cab"
+        : "Bike";
+
+  const eta = selectedRide?.eta ?? 4;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
 
       <View style={styles.container}>
+        {/* HEADER */}
         <View style={styles.header}>
           <View>
             <Text style={styles.eyebrow}>
@@ -68,6 +95,7 @@ export default function DriverFoundScreen() {
           </View>
         </View>
 
+        {/* HERO */}
         <View style={styles.hero}>
           <View style={styles.checkCircle}>
             <Text style={styles.check}>
@@ -80,11 +108,13 @@ export default function DriverFoundScreen() {
           </Text>
 
           <Text style={styles.heroDescription}>
-            Your ride is on the way. Main
-            character energy activated.
+            Your {vehicleDescription.toLowerCase()} is
+            on the way. Main character energy
+            activated.
           </Text>
         </View>
 
+        {/* DRIVER CARD */}
         <View style={styles.driverCard}>
           <View style={styles.driverTop}>
             <View style={styles.avatar}>
@@ -122,16 +152,17 @@ export default function DriverFoundScreen() {
 
           <View style={styles.divider} />
 
+          {/* VEHICLE */}
           <View style={styles.vehicleRow}>
             <View style={styles.vehicleIcon}>
               <Text style={styles.vehicleEmoji}>
-                🛵
+                {vehicleEmoji}
               </Text>
             </View>
 
             <View style={styles.vehicleInfo}>
               <Text style={styles.vehicleName}>
-                {driverVehicle ?? "Honda Activa"}
+                {vehicleName}
               </Text>
 
               <Text style={styles.vehiclePlate}>
@@ -141,7 +172,7 @@ export default function DriverFoundScreen() {
 
             <View style={styles.etaBadge}>
               <Text style={styles.etaNumber}>
-                4
+                {eta}
               </Text>
 
               <Text style={styles.etaLabel}>
@@ -151,6 +182,7 @@ export default function DriverFoundScreen() {
           </View>
         </View>
 
+        {/* STATUS */}
         <View style={styles.statusCard}>
           <View style={styles.statusDot} />
 
@@ -165,6 +197,7 @@ export default function DriverFoundScreen() {
           </View>
         </View>
 
+        {/* ACTIONS */}
         <View style={styles.actions}>
           <Pressable
             style={({ pressed }) => [

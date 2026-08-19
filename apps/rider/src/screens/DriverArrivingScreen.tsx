@@ -29,6 +29,7 @@ export default function DriverArrivingScreen() {
   const {
     rideStatus,
     etaMinutes,
+    selectedRide,
     driverName,
     driverRating,
     driverVehicle,
@@ -51,11 +52,24 @@ export default function DriverArrivingScreen() {
 
   const eta = etaMinutes ?? 0;
 
-  const progress =
-    Math.min(
-      100,
-      Math.max(8, 100 - eta * 28),
-    );
+  const progress = Math.min(
+    100,
+    Math.max(8, 100 - eta * 28),
+  );
+
+  const vehicleEmoji =
+    selectedRide?.type === "VIBE Comfort"
+      ? "🛺"
+      : selectedRide?.type === "VIBE XL"
+        ? "🚕"
+        : "🛵";
+
+  const vehicleName =
+    selectedRide?.type === "VIBE Comfort"
+      ? "Auto Rickshaw"
+      : selectedRide?.type === "VIBE XL"
+        ? "VIBE Cab"
+        : driverVehicle ?? "Honda Activa";
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -100,7 +114,7 @@ export default function DriverArrivingScreen() {
 
             <View style={styles.etaIcon}>
               <Text style={styles.etaEmoji}>
-                🛵
+                {vehicleEmoji}
               </Text>
             </View>
           </View>
@@ -180,13 +194,13 @@ export default function DriverArrivingScreen() {
           <View style={styles.vehicleRow}>
             <View style={styles.vehicleIcon}>
               <Text style={styles.vehicleEmoji}>
-                🛵
+                {vehicleEmoji}
               </Text>
             </View>
 
             <View style={styles.vehicleInfo}>
               <Text style={styles.vehicleName}>
-                {driverVehicle ?? "Honda Activa"}
+                {vehicleName}
               </Text>
 
               <Text style={styles.vehiclePlate}>
