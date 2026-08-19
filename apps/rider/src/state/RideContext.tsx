@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type RideStatus =
   | "idle"
@@ -68,7 +69,6 @@ type RideContextValue = {
   startRide: () => void;
   startDriverArrival: () => void;
   startTrip: () => void;
-
   completeRide: () => void;
 
   saveCompletedRide: () => void;
@@ -76,6 +76,9 @@ type RideContextValue = {
   resetRide: () => void;
   cancelRide: () => void;
 };
+
+const RIDE_HISTORY_STORAGE_KEY =
+  "@vibe/completed-rides";
 
 const RideContext =
   createContext<RideContextValue | null>(null);
@@ -115,6 +118,9 @@ export function RideProvider({
   const [completedRides, setCompletedRides] =
     useState<CompletedRide[]>([]);
 
+  const [historyLoaded, setHistoryLoaded] =
+    useState(false);
+
   const matchingTimer =
     useRef<ReturnType<typeof setTimeout> | null>(
       null,
@@ -133,6 +139,76 @@ export function RideProvider({
     setDriverVehicle(null);
     setDriverPlate(null);
   };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadRideHistory = async () => {
+      try {
+        const storedHistory =
+          await AsyncStorage.getItem(
+            RIDE_HISTORY_STORAGE_KEY,
+          );
+
+        if (!storedHistory) {
+          if (mounted) {
+            setHistoryLoaded(true);
+          }
+
+          return;
+        }
+
+        const parsedHistory =
+          JSON.parse(storedHistory);
+
+        if (
+          Array.isArray(parsedHistory) &&
+          mounted
+        ) {
+          setCompletedRides(
+            parsedHistory as CompletedRide[],
+          );
+        }
+      } catch (error) {
+        console.warn(
+          "Failed to load ride history:",
+          error,
+        );
+      } finally {
+        if (mounted) {
+          setHistoryLoaded(true);
+        }
+      }
+    };
+
+    loadRideHistory();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!historyLoaded) {
+      return;
+    }
+
+    const persistRideHistory = async () => {
+      try {
+        await AsyncStorage.setItem(
+          RIDE_HISTORY_STORAGE_KEY,
+          JSON.stringify(completedRides),
+        );
+      } catch (error) {
+        console.warn(
+          "Failed to save ride history:",
+          error,
+        );
+      }
+    };
+
+    persistRideHistory();
+  }, [completedRides, historyLoaded]);
 
   const startRide = () => {
     clearMatchingTimer();
@@ -305,7 +381,6 @@ export function RideProvider({
       startRide,
       startDriverArrival,
       startTrip,
-
       completeRide,
 
       saveCompletedRide,

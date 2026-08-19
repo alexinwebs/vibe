@@ -14,6 +14,7 @@ import DriverArrivingScreen from "../screens/DriverArrivingScreen";
 import DriverArrivedScreen from "../screens/DriverArrivedScreen";
 import RideInProgressScreen from "../screens/RideInProgressScreen";
 import RideCompletedScreen from "../screens/RideCompletedScreen";
+import RideHistoryScreen from "../screens/RideHistoryScreen";
 
 export type RootStackParamList = {
   Home: undefined;
@@ -27,6 +28,7 @@ export type RootStackParamList = {
   DriverArrived: undefined;
   RideInProgress: undefined;
   RideCompleted: undefined;
+  RideHistory: undefined;
 };
 
 const Stack =
@@ -93,6 +95,11 @@ export default function AppNavigator() {
       <Stack.Screen
         name="RideCompleted"
         component={RideCompletedScreen}
+      />
+
+      <Stack.Screen
+        name="RideHistory"
+        component={RideHistoryScreen}
       />
     </Stack.Navigator>
   );

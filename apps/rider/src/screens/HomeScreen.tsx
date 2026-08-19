@@ -24,7 +24,8 @@ type NavigationProp =
   NativeStackNavigationProp<RootStackParamList, "Home">;
 
 export default function HomeScreen() {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation =
+    useNavigation<NavigationProp>();
 
   const {
     isVibePlusActive,
@@ -32,6 +33,10 @@ export default function HomeScreen() {
 
   const openVibePlus = () => {
     navigation.navigate("VibePlus");
+  };
+
+  const openHistory = () => {
+    navigation.navigate("RideHistory");
   };
 
   return (
@@ -54,11 +59,25 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          <Pressable style={styles.profileButton}>
-            <Text style={styles.profileText}>
-              A
-            </Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.historyButton,
+                pressed && styles.pressed,
+              ]}
+              onPress={openHistory}
+            >
+              <Text style={styles.historyIcon}>
+                ↺
+              </Text>
+            </Pressable>
+
+            <Pressable style={styles.profileButton}>
+              <Text style={styles.profileText}>
+                A
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         {/* HERO */}
@@ -171,9 +190,7 @@ export default function HomeScreen() {
               </View>
 
               <Text style={styles.plusDescription}>
-                {isVibePlusActive
-                  ? "Priority matching. Driver keeps 100%."
-                  : "Priority matching. Driver keeps 100%."}
+                Priority matching. Driver keeps 100%.
               </Text>
             </View>
           </View>
@@ -236,7 +253,7 @@ export default function HomeScreen() {
         />
 
         <RidePreview
-          emoji="🚗"
+          emoji="🛺"
           name="VIBE Auto"
           description="easy mode"
           price="₹68"
@@ -370,6 +387,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
   eyebrow: {
     fontFamily: fonts.bodyBold,
     fontSize: 11,
@@ -385,6 +408,24 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: colors.ink,
     letterSpacing: -1,
+  },
+
+  historyButton: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+  },
+
+  historyIcon: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 23,
+    fontWeight: "900",
+    color: colors.ink,
   },
 
   profileButton: {
