@@ -31,26 +31,52 @@ export default function ConfirmRideScreen() {
   const { isVibePlusActive } =
     useVibePlus();
 
-  const { startRide } = useRide();
+  const {
+    destination,
+    selectedRide,
+    startRide,
+  } = useRide();
 
-  const ride = {
-    type: "Bike",
-    emoji: "🛵",
-    fare: 72,
-    eta: 5,
-    destination: "College",
-  };
+  const ride = selectedRide;
 
-  const commission = isVibePlusActive
-    ? 0
-    : Math.round(ride.fare * 0.1);
+  const rideLabel =
+    ride?.type === "VIBE Go"
+      ? "Bike"
+      : ride?.type === "VIBE Comfort"
+        ? "Auto"
+        : ride?.type === "VIBE XL"
+          ? "Cab"
+          : "Ride";
 
-  const driverReceives =
-    ride.fare - commission;
+  const rideEmoji =
+    ride?.type === "VIBE Go"
+      ? "🛵"
+      : ride?.type === "VIBE Comfort"
+        ? "🛺"
+        : ride?.type === "VIBE XL"
+          ? "🚕"
+          : "🚗";
+
+  const commission =
+    isVibePlusActive || !ride
+      ? 0
+      : Math.round(ride.price * 0.1);
+
+  const driverReceives = ride
+    ? ride.price - commission
+    : 0;
 
   const handleConfirm = () => {
+    if (!ride || !destination) {
+      return;
+    }
+
     startRide();
     navigation.navigate("FindingDriver");
+  };
+
+  const handleBack = () => {
+    navigation.navigate("RideSelection");
   };
 
   return (
@@ -64,9 +90,7 @@ export default function ConfirmRideScreen() {
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
-            onPress={() =>
-              navigation.navigate("RideSelection")
-            }
+            onPress={handleBack}
           >
             <Text style={styles.backText}>
               ‹
@@ -102,7 +126,7 @@ export default function ConfirmRideScreen() {
 
             <View style={styles.heroIcon}>
               <Text style={styles.heroEmoji}>
-                {ride.emoji}
+                {rideEmoji}
               </Text>
             </View>
           </View>
@@ -133,8 +157,18 @@ export default function ConfirmRideScreen() {
                 </Text>
 
                 <Text style={styles.routeValue}>
-                  {ride.destination}
+                  {destination?.name ??
+                    "No destination selected"}
                 </Text>
+
+                {destination?.address ? (
+                  <Text
+                    style={styles.routeAddress}
+                    numberOfLines={1}
+                  >
+                    {destination.address}
+                  </Text>
+                ) : null}
               </View>
             </View>
           </View>
@@ -152,12 +186,12 @@ export default function ConfirmRideScreen() {
               </Text>
 
               <Text style={styles.summaryValue}>
-                {ride.type}
+                {rideLabel}
               </Text>
             </View>
 
             <Text style={styles.summaryEmoji}>
-              {ride.emoji}
+              {rideEmoji}
             </Text>
           </View>
 
@@ -170,7 +204,7 @@ export default function ConfirmRideScreen() {
               </Text>
 
               <Text style={styles.summaryValue}>
-                {ride.eta} min
+                {ride?.eta ?? "--"} min
               </Text>
             </View>
 
@@ -203,7 +237,7 @@ export default function ConfirmRideScreen() {
             </Text>
 
             <Text style={styles.fareValue}>
-              ₹{ride.fare}
+              ₹{ride?.price ?? 0}
             </Text>
           </View>
 
@@ -252,9 +286,12 @@ export default function ConfirmRideScreen() {
         )}
 
         <Pressable
+          disabled={!ride || !destination}
           style={({ pressed }) => [
             styles.confirmButton,
             pressed && styles.confirmPressed,
+            (!ride || !destination) &&
+              styles.confirmDisabled,
           ]}
           onPress={handleConfirm}
         >
@@ -273,7 +310,7 @@ export default function ConfirmRideScreen() {
           </View>
 
           <Text style={styles.confirmPrice}>
-            ₹{ride.fare}
+            ₹{ride?.price ?? 0}
           </Text>
         </Pressable>
 
@@ -425,6 +462,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: colors.surface,
+  },
+
+  routeAddress: {
+    fontFamily: fonts.body,
+    marginTop: 3,
+    fontSize: 9,
+    color: "#969690",
   },
 
   pickupDot: {
@@ -624,6 +668,10 @@ const styles = StyleSheet.create({
 
   confirmPressed: {
     opacity: 0.72,
+  },
+
+  confirmDisabled: {
+    opacity: 0.5,
   },
 
   confirmEyebrow: {

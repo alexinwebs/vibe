@@ -16,8 +16,27 @@ export type RideStatus =
   | "in_progress"
   | "completed";
 
+export type RideType =
+  | "VIBE Go"
+  | "VIBE Comfort"
+  | "VIBE XL";
+
+export type Destination = {
+  name: string;
+  address: string;
+};
+
+export type SelectedRide = {
+  type: RideType;
+  price: number;
+  eta: number;
+};
+
 type RideContextValue = {
   rideStatus: RideStatus;
+
+  destination: Destination | null;
+  selectedRide: SelectedRide | null;
 
   etaMinutes: number | null;
   rideMinutes: number;
@@ -27,9 +46,18 @@ type RideContextValue = {
   driverVehicle: string | null;
   driverPlate: string | null;
 
+  setDestination: (
+    destination: Destination,
+  ) => void;
+
+  setSelectedRide: (
+    ride: SelectedRide,
+  ) => void;
+
   startRide: () => void;
   startDriverArrival: () => void;
   startTrip: () => void;
+
   resetRide: () => void;
   cancelRide: () => void;
 };
@@ -44,6 +72,12 @@ export function RideProvider({
 }) {
   const [rideStatus, setRideStatus] =
     useState<RideStatus>("idle");
+
+  const [destination, setDestinationState] =
+    useState<Destination | null>(null);
+
+  const [selectedRide, setSelectedRideState] =
+    useState<SelectedRide | null>(null);
 
   const [etaMinutes, setEtaMinutes] =
     useState<number | null>(null);
@@ -80,6 +114,18 @@ export function RideProvider({
     setDriverRating(null);
     setDriverVehicle(null);
     setDriverPlate(null);
+  };
+
+  const setDestination = (
+    nextDestination: Destination,
+  ) => {
+    setDestinationState(nextDestination);
+  };
+
+  const setSelectedRide = (
+    ride: SelectedRide,
+  ) => {
+    setSelectedRideState(ride);
   };
 
   const startRide = () => {
@@ -150,7 +196,9 @@ export function RideProvider({
     }
 
     const timer = setInterval(() => {
-      setRideMinutes((current) => current + 1);
+      setRideMinutes(
+        (current) => current + 1,
+      );
     }, 1000);
 
     return () => clearInterval(timer);
@@ -160,6 +208,10 @@ export function RideProvider({
     clearMatchingTimer();
 
     setRideStatus("idle");
+
+    setDestinationState(null);
+    setSelectedRideState(null);
+
     setEtaMinutes(null);
     setRideMinutes(0);
 
@@ -170,6 +222,10 @@ export function RideProvider({
     clearMatchingTimer();
 
     setRideStatus("idle");
+
+    setDestinationState(null);
+    setSelectedRideState(null);
+
     setEtaMinutes(null);
     setRideMinutes(0);
 
@@ -179,6 +235,10 @@ export function RideProvider({
   const value = useMemo<RideContextValue>(
     () => ({
       rideStatus,
+
+      destination,
+      selectedRide,
+
       etaMinutes,
       rideMinutes,
 
@@ -187,14 +247,20 @@ export function RideProvider({
       driverVehicle,
       driverPlate,
 
+      setDestination,
+      setSelectedRide,
+
       startRide,
       startDriverArrival,
       startTrip,
+
       resetRide,
       cancelRide,
     }),
     [
       rideStatus,
+      destination,
+      selectedRide,
       etaMinutes,
       rideMinutes,
       driverName,

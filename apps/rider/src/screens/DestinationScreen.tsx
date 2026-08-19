@@ -13,6 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import type { RootStackParamList } from "../navigation/AppNavigator";
+import { useRide } from "../state/RideContext";
 import {
   colors,
   fonts,
@@ -54,9 +55,11 @@ const places: Place[] = [
 export default function DestinationScreen() {
   const navigation = useNavigation<NavigationProp>();
 
+  const { setDestination } = useRide();
+
   const [search, setSearch] = useState("");
-  const [destination, setDestination] =
-    useState<string | null>(null);
+  const [destination, setLocalDestination] =
+    useState<Place | null>(null);
 
   const filteredPlaces = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -71,13 +74,13 @@ export default function DestinationScreen() {
   }, [search]);
 
   const handleSelectDestination = (
-    placeName: string,
+    place: Place,
   ) => {
-    setDestination(placeName);
+    setLocalDestination(place);
   };
 
   const handleChangeDestination = () => {
-    setDestination(null);
+    setLocalDestination(null);
     setSearch("");
   };
 
@@ -85,6 +88,11 @@ export default function DestinationScreen() {
     if (!destination) {
       return;
     }
+
+    setDestination({
+      name: destination.name,
+      address: destination.address,
+    });
 
     navigation.navigate("RideSelection");
   };
@@ -161,7 +169,7 @@ export default function DestinationScreen() {
                 </Text>
 
                 <Text style={styles.selectedName}>
-                  {destination}
+                  {destination.name}
                 </Text>
 
                 <Text style={styles.selectedStatus}>
@@ -197,9 +205,7 @@ export default function DestinationScreen() {
                 <Pressable
                   key={place.name}
                   onPress={() =>
-                    handleSelectDestination(
-                      place.name,
-                    )
+                    handleSelectDestination(place)
                   }
                   style={({ pressed }) => [
                     styles.placeCard,
@@ -292,8 +298,9 @@ export default function DestinationScreen() {
                     styles.placeholderValue,
                 ]}
               >
-                {destination ??
-                  "Drop the spot →"}
+                {destination
+                  ? destination.name
+                  : "Drop the spot →"}
               </Text>
             </View>
           </View>

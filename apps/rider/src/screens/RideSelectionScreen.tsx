@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import type { RootStackParamList } from "../navigation/AppNavigator";
+import { useRide } from "../state/RideContext";
 import { useVibePlus } from "../state/VibePlusContext";
 import {
   colors,
@@ -60,12 +61,33 @@ export default function RideSelectionScreen() {
     useNavigation<NavigationProp>();
 
   const {
+    destination,
+    selectedRide: contextRide,
+    setSelectedRide,
+  } = useRide();
+
+  const {
     isVibePlusActive,
     isLoading,
   } = useVibePlus();
 
-  const [selectedRide, setSelectedRide] =
-    useState<Ride>(rides[0]);
+  const restoredRideType =
+    contextRide?.type === "VIBE Go"
+      ? "Bike"
+      : contextRide?.type === "VIBE Comfort"
+        ? "Auto"
+        : contextRide?.type === "VIBE XL"
+          ? "Cab"
+          : null;
+
+  const initialRide =
+    rides.find(
+      (ride) =>
+        ride.type === restoredRideType,
+    ) ?? rides[0];
+
+  const [selectedRide, setLocalSelectedRide] =
+    useState<Ride>(initialRide);
 
   const commission = useMemo(() => {
     if (isVibePlusActive) {
@@ -84,10 +106,21 @@ export default function RideSelectionScreen() {
     selectedRide.fare - commission;
 
   const selectRide = (ride: Ride) => {
-    setSelectedRide(ride);
+    setLocalSelectedRide(ride);
   };
 
   const continueToConfirm = () => {
+    setSelectedRide({
+      type:
+        selectedRide.type === "Bike"
+          ? "VIBE Go"
+          : selectedRide.type === "Auto"
+            ? "VIBE Comfort"
+            : "VIBE XL",
+      price: selectedRide.fare,
+      eta: selectedRide.eta,
+    });
+
     navigation.navigate("ConfirmRide");
   };
 
@@ -103,7 +136,6 @@ export default function RideSelectionScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* HEADER */}
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
@@ -111,7 +143,9 @@ export default function RideSelectionScreen() {
               navigation.navigate("Destination")
             }
           >
-            <Text style={styles.backText}>‹</Text>
+            <Text style={styles.backText}>
+              ‹
+            </Text>
           </Pressable>
 
           <View style={styles.headerCenter}>
@@ -127,7 +161,6 @@ export default function RideSelectionScreen() {
           <View style={styles.headerSpacer} />
         </View>
 
-        {/* DESTINATION */}
         <View style={styles.destinationCard}>
           <View style={styles.destinationDot} />
 
@@ -137,8 +170,18 @@ export default function RideSelectionScreen() {
             </Text>
 
             <Text style={styles.destinationName}>
-              College
+              {destination?.name ??
+                "No destination selected"}
             </Text>
+
+            {destination?.address ? (
+              <Text
+                style={styles.destinationAddress}
+                numberOfLines={1}
+              >
+                {destination.address}
+              </Text>
+            ) : null}
           </View>
 
           <Text style={styles.destinationArrow}>
@@ -146,7 +189,6 @@ export default function RideSelectionScreen() {
           </Text>
         </View>
 
-        {/* VIBE PICK */}
         <View style={styles.pickBanner}>
           <View style={styles.pickBadge}>
             <Text style={styles.pickBadgeText}>
@@ -169,7 +211,6 @@ export default function RideSelectionScreen() {
           </Text>
         </View>
 
-        {/* RIDES */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
             Choose your vibe
@@ -219,7 +260,9 @@ export default function RideSelectionScreen() {
 
                     {selected && (
                       <View
-                        style={styles.selectedBadge}
+                        style={
+                          styles.selectedBadge
+                        }
                       >
                         <Text
                           style={
@@ -252,7 +295,6 @@ export default function RideSelectionScreen() {
           })}
         </View>
 
-        {/* VIBE+ */}
         <View style={styles.plusSectionHeader}>
           <View>
             <Text style={styles.plusEyebrow}>
@@ -343,7 +385,6 @@ export default function RideSelectionScreen() {
           </View>
         </Pressable>
 
-        {/* FARE */}
         <View style={styles.receipt}>
           <View style={styles.receiptHeader}>
             <Text style={styles.receiptEyebrow}>
@@ -413,13 +454,16 @@ export default function RideSelectionScreen() {
           </View>
         </View>
 
-        {/* CTA */}
         <Pressable
-          disabled={isLoading}
+          disabled={
+            isLoading || !destination
+          }
           style={({ pressed }) => [
             styles.cta,
             pressed && styles.ctaPressed,
             isLoading &&
+              styles.ctaDisabled,
+            !destination &&
               styles.ctaDisabled,
           ]}
           onPress={continueToConfirm}
@@ -577,6 +621,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
     color: colors.ink,
+  },
+
+  destinationAddress: {
+    fontFamily: fonts.body,
+    marginTop: 2,
+    fontSize: 9,
+    color: colors.muted,
   },
 
   destinationArrow: {
