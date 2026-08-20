@@ -36,6 +36,7 @@ function getVehicleEmoji(
     case "VIBE XL":
       return "🚕";
 
+    case "VIBE Go":
     default:
       return "🛵";
   }
@@ -45,14 +46,17 @@ function getVehicleLabel(
   rideType: CompletedRide["rideType"],
 ) {
   switch (rideType) {
+    case "VIBE Go":
+      return "VIBE Go";
+
     case "VIBE Comfort":
-      return "Auto";
+      return "VIBE Comfort";
 
     case "VIBE XL":
-      return "Cab";
+      return "VIBE XL";
 
     default:
-      return "Bike";
+      return "VIBE Go";
   }
 }
 

@@ -8,6 +8,16 @@ import React, {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import {
+  assignDriver as apiAssignDriver,
+  completeTrip as apiCompleteTrip,
+  createRide as apiCreateRide,
+  mapApiStatusToLocal,
+  mapRideTypeToApi,
+  startDriverArrival as apiStartDriverArrival,
+  startTrip as apiStartTrip,
+} from "../api/vibeApi";
+
 export type RideStatus =
   | "idle"
   | "finding"
@@ -65,6 +75,9 @@ type RideContextValue = {
   currentCompletedRideId: string | null;
   completedRides: CompletedRide[];
 
+  backendRideId: string | null;
+  backendFinalFare: number | null;
+
   setDestination: (
     destination: Destination,
   ) => void;
@@ -90,6 +103,9 @@ type RideContextValue = {
 
 const RIDE_HISTORY_STORAGE_KEY =
   "@vibe/completed-rides";
+
+const DEMO_RIDER_ID =
+  "rider-demo-001";
 
 const RideContext =
   createContext<RideContextValue | null>(null);
@@ -126,6 +142,12 @@ export function RideProvider({
   const [driverPlate, setDriverPlate] =
     useState<string | null>(null);
 
+  const [backendRideId, setBackendRideId] =
+    useState<string | null>(null);
+
+  const [backendFinalFare, setBackendFinalFare] =
+    useState<number | null>(null);
+
   const [
     currentCompletedRideId,
     setCurrentCompletedRideId,
@@ -155,6 +177,12 @@ export function RideProvider({
     setDriverVehicle(null);
     setDriverPlate(null);
   };
+
+  /*
+   * --------------------------------------------------
+   * LOAD RIDE HISTORY
+   * --------------------------------------------------
+   */
 
   useEffect(() => {
     let mounted = true;
@@ -213,6 +241,12 @@ export function RideProvider({
     };
   }, []);
 
+  /*
+   * --------------------------------------------------
+   * SAVE RIDE HISTORY
+   * --------------------------------------------------
+   */
+
   useEffect(() => {
     if (!historyLoaded) {
       return;
@@ -233,51 +267,306 @@ export function RideProvider({
     };
 
     persistRideHistory();
-  }, [completedRides, historyLoaded]);
+  }, [
+    completedRides,
+    historyLoaded,
+  ]);
+
+  /*
+   * --------------------------------------------------
+   * CREATE RIDE
+   * --------------------------------------------------
+   */
 
   const startRide = () => {
     clearMatchingTimer();
 
+    if (!destination) {
+      console.warn(
+        "Cannot create ride without destination.",
+      );
+
+      return;
+    }
+
+    if (!selectedRide) {
+      console.warn(
+        "Cannot create ride without selected ride.",
+      );
+
+      return;
+    }
+
+    const pickupAddress =
+      "Current location";
+
+    const destinationAddress =
+      destination.address ??
+      destination.name;
+
     setRideStatus("finding");
     setEtaMinutes(null);
     setRideMinutes(0);
+
+    setBackendRideId(null);
+    setBackendFinalFare(null);
     setCurrentCompletedRideId(null);
 
     clearDriver();
 
-    matchingTimer.current = setTimeout(() => {
-      setDriverName("Arjun");
-      setDriverRating(4.9);
-      setDriverVehicle("Honda Activa");
-      setDriverPlate("UP 14 AB 4821");
+    const createBackendRide =
+      async () => {
+        try {
+          const ride =
+            await apiCreateRide({
+              riderId: DEMO_RIDER_ID,
 
-      setRideStatus("driver_found");
-      setEtaMinutes(null);
+              rideType:
+                mapRideTypeToApi(
+                  selectedRide.type,
+                ),
 
-      matchingTimer.current = null;
-    }, 3000);
+              pickupAddress,
+
+              destinationAddress,
+            });
+
+          setBackendRideId(ride.id);
+
+          setRideStatus(
+            mapApiStatusToLocal(
+              ride.status,
+            ),
+          );
+
+          /*
+           * The backend is now searching.
+           *
+           * For the current prototype we automatically
+           * assign the demo driver after a short delay.
+           *
+           * This is intentionally still simulated,
+           * but the actual ride state transition happens
+           * through the backend API.
+           */
+
+          matchingTimer.current =
+            setTimeout(
+              async () => {
+                try {
+                  const result =
+                    await apiAssignDriver(
+                      ride.id,
+                    );
+
+                  setDriverName(
+                    result.driver.name,
+                  );
+
+                  /*
+                   * The backend Driver type currently
+                   * doesn't expose a rating, so retain
+                   * the existing prototype rating.
+                   */
+
+                  setDriverRating(4.9);
+
+                  setDriverVehicle(
+                    result.driver.name ===
+                    "Arjun"
+                      ? "Honda Activa"
+                      : "Vehicle",
+                  );
+
+                  setDriverPlate(
+                    "UP 14 AB 4821",
+                  );
+
+                  setRideStatus(
+                    mapApiStatusToLocal(
+                      result.ride.status,
+                    ),
+                  );
+
+                  setEtaMinutes(null);
+
+                  matchingTimer.current =
+                    null;
+                } catch (error) {
+                  console.warn(
+                    "Failed to assign driver:",
+                    error,
+                  );
+                }
+              },
+              3000,
+            );
+        } catch (error) {
+          console.warn(
+            "Failed to create ride:",
+            error,
+          );
+
+          setRideStatus("idle");
+          setBackendRideId(null);
+        }
+      };
+
+    createBackendRide();
   };
+
+  /*
+   * --------------------------------------------------
+   * DRIVER ARRIVING
+   * --------------------------------------------------
+   */
 
   const startDriverArrival = () => {
     clearMatchingTimer();
 
-    setRideStatus("driver_arriving");
-    setEtaMinutes(3);
-    setRideMinutes(0);
+    if (!backendRideId) {
+      console.warn(
+        "Cannot start driver arrival without backend ride ID.",
+      );
+
+      return;
+    }
+
+    const startBackendArrival =
+      async () => {
+        try {
+          const ride =
+            await apiStartDriverArrival(
+              backendRideId,
+            );
+
+          setRideStatus(
+            mapApiStatusToLocal(
+              ride.status,
+            ),
+          );
+
+          setEtaMinutes(3);
+          setRideMinutes(0);
+        } catch (error) {
+          console.warn(
+            "Failed to start driver arrival:",
+            error,
+          );
+        }
+      };
+
+    startBackendArrival();
   };
 
+  /*
+   * --------------------------------------------------
+   * START TRIP
+   * --------------------------------------------------
+   */
+
   const startTrip = () => {
-    setEtaMinutes(null);
-    setRideMinutes(0);
-    setRideStatus("in_progress");
+    clearMatchingTimer();
+
+    if (!backendRideId) {
+      console.warn(
+        "Cannot start trip without backend ride ID.",
+      );
+
+      return;
+    }
+
+    const startBackendTrip =
+      async () => {
+        try {
+          const ride =
+            await apiStartTrip(
+              backendRideId,
+            );
+
+          setEtaMinutes(null);
+          setRideMinutes(0);
+
+          setRideStatus(
+            mapApiStatusToLocal(
+              ride.status,
+            ),
+          );
+        } catch (error) {
+          console.warn(
+            "Failed to start trip:",
+            error,
+          );
+        }
+      };
+
+    startBackendTrip();
   };
+
+  /*
+   * --------------------------------------------------
+   * COMPLETE RIDE
+   * --------------------------------------------------
+   */
 
   const completeRide = () => {
     clearMatchingTimer();
 
-    setRideStatus("completed");
-    setEtaMinutes(null);
+    if (!backendRideId) {
+      console.warn(
+        "Cannot complete ride without backend ride ID.",
+      );
+
+      return;
+    }
+
+    const finalFare =
+      selectedRide?.price ?? 0;
+
+    const completeBackendTrip =
+      async () => {
+        try {
+          const ride =
+            await apiCompleteTrip(
+              backendRideId,
+              finalFare,
+            );
+
+          setBackendFinalFare(
+            ride.finalFare,
+          );
+
+          /*
+           * This changes the state from
+           * "in_progress" to "completed".
+           *
+           * The ride timer effect below therefore
+           * cleans itself up immediately.
+           */
+
+          setRideStatus(
+            mapApiStatusToLocal(
+              ride.status,
+            ),
+          );
+
+          setEtaMinutes(null);
+        } catch (error) {
+          console.warn(
+            "Failed to complete ride:",
+            error,
+          );
+        }
+      };
+
+    completeBackendTrip();
   };
+
+  /*
+   * --------------------------------------------------
+   * SAVE COMPLETED RIDE LOCALLY
+   * --------------------------------------------------
+   */
 
   const saveCompletedRide = () => {
     if (
@@ -295,27 +584,42 @@ export function RideProvider({
       return;
     }
 
+    const completedFare =
+      backendFinalFare ??
+      selectedRide.price;
+
     const completedRide: CompletedRide = {
-      id: `${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2, 8)}`,
+      id:
+        backendRideId ??
+        `${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 8)}`,
 
       destination: {
         name: destination.name,
         address: destination.address,
       },
 
-      rideType: selectedRide.type,
-      fare: selectedRide.price,
+      rideType:
+        selectedRide.type,
+
+      fare: completedFare,
+
       eta: selectedRide.eta,
 
       driverName,
+
       driverRating,
+
       driverVehicle,
+
       driverPlate,
 
-      durationSeconds: rideMinutes,
-      completedAt: new Date().toISOString(),
+      durationSeconds:
+        rideMinutes,
+
+      completedAt:
+        new Date().toISOString(),
 
       riderRating: null,
     };
@@ -324,11 +628,19 @@ export function RideProvider({
       completedRide.id,
     );
 
-    setCompletedRides((current) => [
-      completedRide,
-      ...current,
-    ]);
+    setCompletedRides(
+      (current) => [
+        completedRide,
+        ...current,
+      ],
+    );
   };
+
+  /*
+   * --------------------------------------------------
+   * RATE CURRENT RIDE
+   * --------------------------------------------------
+   */
 
   const rateCurrentRide = (
     rating: RiderRating,
@@ -337,144 +649,239 @@ export function RideProvider({
       return;
     }
 
-    setCompletedRides((current) =>
-      current.map((ride) =>
-        ride.id === currentCompletedRideId
-          ? {
-              ...ride,
-              riderRating: rating,
-            }
-          : ride,
-      ),
+    setCompletedRides(
+      (current) =>
+        current.map((ride) =>
+          ride.id ===
+          currentCompletedRideId
+            ? {
+                ...ride,
+                riderRating:
+                  rating,
+              }
+            : ride,
+        ),
     );
   };
 
+  /*
+   * --------------------------------------------------
+   * DRIVER ARRIVAL COUNTDOWN
+   * --------------------------------------------------
+   */
+
   useEffect(() => {
     if (
-      rideStatus !== "driver_arriving" ||
+      rideStatus !==
+        "driver_arriving" ||
       etaMinutes === null
     ) {
       return;
     }
 
     if (etaMinutes <= 0) {
-      setRideStatus("driver_arrived");
+      setRideStatus(
+        "driver_arrived",
+      );
+
       return;
     }
 
-    const timer = setTimeout(() => {
-      setEtaMinutes((current) => {
-        if (current === null) {
-          return null;
-        }
+    const timer =
+      setTimeout(() => {
+        setEtaMinutes(
+          (current) => {
+            if (
+              current === null
+            ) {
+              return null;
+            }
 
-        return Math.max(0, current - 1);
-      });
-    }, 1000);
+            return Math.max(
+              0,
+              current - 1,
+            );
+          },
+        );
+      }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [rideStatus, etaMinutes]);
+    return () =>
+      clearTimeout(timer);
+  }, [
+    rideStatus,
+    etaMinutes,
+  ]);
+
+  /*
+   * --------------------------------------------------
+   * RIDE TIMER
+   * --------------------------------------------------
+   */
 
   useEffect(() => {
-    if (rideStatus !== "in_progress") {
+    if (
+      rideStatus !==
+      "in_progress"
+    ) {
       return;
     }
 
-    const timer = setInterval(() => {
-      setRideMinutes(
-        (current) => current + 1,
-      );
-    }, 1000);
+    const timer =
+      setInterval(() => {
+        setRideMinutes(
+          (current) =>
+            current + 1,
+        );
+      }, 1000);
 
-    return () => clearInterval(timer);
+    return () =>
+      clearInterval(timer);
   }, [rideStatus]);
+
+  /*
+   * --------------------------------------------------
+   * RESET
+   * --------------------------------------------------
+   */
 
   const resetRide = () => {
     clearMatchingTimer();
 
     setRideStatus("idle");
+
     setEtaMinutes(null);
+
     setRideMinutes(0);
 
     setDestination(null);
+
     setSelectedRide(null);
 
-    setCurrentCompletedRideId(null);
+    setBackendRideId(null);
+
+    setBackendFinalFare(null);
+
+    setCurrentCompletedRideId(
+      null,
+    );
 
     clearDriver();
   };
+
+  /*
+   * --------------------------------------------------
+   * CANCEL
+   * --------------------------------------------------
+   */
 
   const cancelRide = () => {
     clearMatchingTimer();
 
     setRideStatus("idle");
+
     setEtaMinutes(null);
+
     setRideMinutes(0);
 
     setDestination(null);
+
     setSelectedRide(null);
 
-    setCurrentCompletedRideId(null);
+    setBackendRideId(null);
+
+    setBackendFinalFare(null);
+
+    setCurrentCompletedRideId(
+      null,
+    );
 
     clearDriver();
   };
 
-  const value = useMemo<RideContextValue>(
-    () => ({
-      rideStatus,
+  /*
+   * --------------------------------------------------
+   * CONTEXT VALUE
+   * --------------------------------------------------
+   */
 
-      destination,
-      selectedRide,
+  const value =
+    useMemo<RideContextValue>(
+      () => ({
+        rideStatus,
 
-      etaMinutes,
-      rideMinutes,
+        destination,
 
-      driverName,
-      driverRating,
-      driverVehicle,
-      driverPlate,
+        selectedRide,
 
-      currentCompletedRideId,
-      completedRides,
+        etaMinutes,
 
-      setDestination,
-      setSelectedRide,
+        rideMinutes,
 
-      startRide,
-      startDriverArrival,
-      startTrip,
-      completeRide,
+        driverName,
 
-      saveCompletedRide,
-      rateCurrentRide,
+        driverRating,
 
-      resetRide,
-      cancelRide,
-    }),
-    [
-      rideStatus,
-      destination,
-      selectedRide,
-      etaMinutes,
-      rideMinutes,
-      driverName,
-      driverRating,
-      driverVehicle,
-      driverPlate,
-      currentCompletedRideId,
-      completedRides,
-    ],
-  );
+        driverVehicle,
+
+        driverPlate,
+
+        currentCompletedRideId,
+
+        completedRides,
+
+        backendRideId,
+
+        backendFinalFare,
+
+        setDestination,
+
+        setSelectedRide,
+
+        startRide,
+
+        startDriverArrival,
+
+        startTrip,
+
+        completeRide,
+
+        saveCompletedRide,
+
+        rateCurrentRide,
+
+        resetRide,
+
+        cancelRide,
+      }),
+      [
+        rideStatus,
+        destination,
+        selectedRide,
+        etaMinutes,
+        rideMinutes,
+        driverName,
+        driverRating,
+        driverVehicle,
+        driverPlate,
+        currentCompletedRideId,
+        completedRides,
+        backendRideId,
+        backendFinalFare,
+      ],
+    );
 
   return (
-    <RideContext.Provider value={value}>
+    <RideContext.Provider
+      value={value}
+    >
       {children}
     </RideContext.Provider>
   );
 }
 
 export function useRide() {
-  const context = useContext(RideContext);
+  const context =
+    useContext(RideContext);
 
   if (!context) {
     throw new Error(

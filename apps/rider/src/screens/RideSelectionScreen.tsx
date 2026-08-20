@@ -25,7 +25,10 @@ type NavigationProp =
   NativeStackNavigationProp<RootStackParamList>;
 
 type Ride = {
-  type: "Bike" | "Auto" | "Cab";
+  type:
+    | "VIBE Go"
+    | "VIBE Comfort"
+    | "VIBE XL";
   emoji: string;
   fare: number;
   eta: number;
@@ -34,21 +37,21 @@ type Ride = {
 
 const rides: Ride[] = [
   {
-    type: "Bike",
+    type: "VIBE Go",
     emoji: "🛵",
     fare: 72,
     eta: 5,
     description: "Zoomies mode",
   },
   {
-    type: "Auto",
+    type: "VIBE Comfort",
     emoji: "🛺",
     fare: 108,
     eta: 4,
     description: "Wallet said thank you",
   },
   {
-    type: "Cab",
+    type: "VIBE XL",
     emoji: "🚕",
     fare: 168,
     eta: 7,
@@ -71,19 +74,10 @@ export default function RideSelectionScreen() {
     isLoading,
   } = useVibePlus();
 
-  const restoredRideType =
-    contextRide?.type === "VIBE Go"
-      ? "Bike"
-      : contextRide?.type === "VIBE Comfort"
-        ? "Auto"
-        : contextRide?.type === "VIBE XL"
-          ? "Cab"
-          : null;
-
   const initialRide =
     rides.find(
       (ride) =>
-        ride.type === restoredRideType,
+        ride.type === contextRide?.type,
     ) ?? rides[0];
 
   const [selectedRide, setLocalSelectedRide] =
@@ -111,12 +105,7 @@ export default function RideSelectionScreen() {
 
   const continueToConfirm = () => {
     setSelectedRide({
-      type:
-        selectedRide.type === "Bike"
-          ? "VIBE Go"
-          : selectedRide.type === "Auto"
-            ? "VIBE Comfort"
-            : "VIBE XL",
+      type: selectedRide.type,
       price: selectedRide.fare,
       eta: selectedRide.eta,
     });
