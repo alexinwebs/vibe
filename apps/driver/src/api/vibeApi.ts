@@ -19,6 +19,10 @@ type AcceptRideResponse = {
   driver: Driver;
 };
 
+type RideResponse = {
+  ride: Ride;
+};
+
 async function apiRequest<T>(
   path: string,
   options?: RequestInit,
@@ -27,13 +31,8 @@ async function apiRequest<T>(
     Accept: "application/json",
   };
 
-  const hasBody =
-    options?.body !== undefined &&
-    options?.body !== null;
-
-  if (hasBody) {
-    headers["Content-Type"] =
-      "application/json";
+  if (options?.body) {
+    headers["Content-Type"] = "application/json";
   }
 
   const response = await fetch(
@@ -59,7 +58,7 @@ async function apiRequest<T>(
         message = body.message;
       }
     } catch {
-      // Ignore invalid error response.
+      // Ignore invalid error response bodies.
     }
 
     throw new Error(message);
@@ -91,7 +90,6 @@ export async function goOnline(
       `/drivers/${driverId}/online`,
       {
         method: "POST",
-        body: JSON.stringify({}),
       },
     );
 
@@ -106,7 +104,6 @@ export async function goOffline(
       `/drivers/${driverId}/offline`,
       {
         method: "POST",
-        body: JSON.stringify({}),
       },
     );
 
@@ -145,6 +142,66 @@ export async function acceptRide(
       }),
     },
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              DRIVER ARRIVING                               */
+/* -------------------------------------------------------------------------- */
+
+export async function driverArriving(
+  rideId: string,
+): Promise<Ride> {
+  const result =
+    await apiRequest<RideResponse>(
+      `/rides/${rideId}/driver-arriving`,
+      {
+        method: "POST",
+      },
+    );
+
+  return result.ride;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                START RIDE                                  */
+/* -------------------------------------------------------------------------- */
+
+export async function startRide(
+  rideId: string,
+): Promise<Ride> {
+  const result =
+    await apiRequest<RideResponse>(
+      `/rides/${rideId}/start`,
+      {
+        method: "POST",
+      },
+    );
+
+  return result.ride;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              COMPLETE RIDE                                 */
+/* -------------------------------------------------------------------------- */
+
+export async function completeRide(
+  rideId: string,
+  finalFare?: number,
+): Promise<Ride> {
+  const result =
+    await apiRequest<RideResponse>(
+      `/rides/${rideId}/complete`,
+      {
+        method: "POST",
+        body: JSON.stringify(
+          finalFare === undefined
+            ? {}
+            : { finalFare },
+        ),
+      },
+    );
+
+  return result.ride;
 }
 
 /* -------------------------------------------------------------------------- */

@@ -17,10 +17,13 @@ import type { Ride } from "@vibe/types";
 
 import {
   acceptRide,
+  completeRide,
+  driverArriving,
   getPendingRides,
   getRideTypeLabel,
   goOffline as apiGoOffline,
   goOnline as apiGoOnline,
+  startRide,
 } from "../api/vibeApi";
 
 import { useDriver } from "../state/DriverContext";
@@ -45,6 +48,9 @@ export default function DriverHomeScreen() {
 
   const [acceptingRideId, setAcceptingRideId] =
     useState<string | null>(null);
+
+  const [actionLoading, setActionLoading] =
+    useState(false);
 
   const [apiError, setApiError] =
     useState<string | null>(null);
@@ -195,6 +201,170 @@ export default function DriverHomeScreen() {
     }
   };
 
+  const handleDriverArriving = async () => {
+    if (!acceptedRide || actionLoading) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setApiError(null);
+
+      const updatedRide =
+        await driverArriving(
+          acceptedRide.id,
+        );
+
+      setAcceptedRide(updatedRide);
+    } catch (error) {
+      console.warn(
+        "Failed to mark driver arriving:",
+        error,
+      );
+
+      setApiError(
+        error instanceof Error
+          ? error.message
+          : "Failed to mark driver arriving.",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleStartRide = async () => {
+    if (!acceptedRide || actionLoading) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setApiError(null);
+
+      const updatedRide =
+        await startRide(
+          acceptedRide.id,
+        );
+
+      setAcceptedRide(updatedRide);
+    } catch (error) {
+      console.warn(
+        "Failed to start ride:",
+        error,
+      );
+
+      setApiError(
+        error instanceof Error
+          ? error.message
+          : "Failed to start ride.",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCompleteRide = async () => {
+    if (!acceptedRide || actionLoading) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      setApiError(null);
+
+      const completedRide =
+        await completeRide(
+          acceptedRide.id,
+          acceptedRide.estimatedFare,
+        );
+
+      setAcceptedRide(null);
+
+      setPendingRides([]);
+
+      if (isOnline) {
+        await loadPendingRides();
+      }
+
+      console.log(
+        "Ride completed:",
+        completedRide,
+      );
+    } catch (error) {
+      console.warn(
+        "Failed to complete ride:",
+        error,
+      );
+
+      setApiError(
+        error instanceof Error
+          ? error.message
+          : "Failed to complete ride.",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const getRideStatusLabel = (
+    status: Ride["status"],
+  ) => {
+    switch (status) {
+      case "DRIVER_ASSIGNED":
+        return "DRIVER ASSIGNED";
+
+      case "DRIVER_ARRIVING":
+        return "DRIVER ARRIVING";
+
+      case "RIDE_STARTED":
+        return "RIDE IN PROGRESS";
+
+      case "RIDE_COMPLETED":
+        return "COMPLETED";
+
+      default:
+        return status;
+    }
+  };
+
+  const getActionButtonLabel = (
+    status: Ride["status"],
+  ) => {
+    switch (status) {
+      case "DRIVER_ASSIGNED":
+        return "START ARRIVING";
+
+      case "DRIVER_ARRIVING":
+        return "START RIDE";
+
+      case "RIDE_STARTED":
+        return "COMPLETE RIDE";
+
+      default:
+        return "NEXT";
+    }
+  };
+
+  const handleRideAction = async () => {
+    if (!acceptedRide) {
+      return;
+    }
+
+    switch (acceptedRide.status) {
+      case "DRIVER_ASSIGNED":
+        await handleDriverArriving();
+        break;
+
+      case "DRIVER_ARRIVING":
+        await handleStartRide();
+        break;
+
+      case "RIDE_STARTED":
+        await handleCompleteRide();
+        break;
+    }
+  };
+
   return (
     <ScrollView
       style={styles.scroll}
@@ -252,7 +422,13 @@ export default function DriverHomeScreen() {
 
         <Text style={styles.heroTitle}>
           {acceptedRide
-            ? "Ride accepted."
+            ? acceptedRide.status ===
+              "DRIVER_ARRIVING"
+              ? "You're heading there."
+              : acceptedRide.status ===
+                "RIDE_STARTED"
+                ? "Ride in progress."
+                : "Ride accepted."
             : isOnline
               ? "You're live."
               : "You're offline."}
@@ -260,7 +436,13 @@ export default function DriverHomeScreen() {
 
         <Text style={styles.heroDescription}>
           {acceptedRide
-            ? "You have accepted a VIBE ride. Complete this ride before accepting another request."
+            ? acceptedRide.status ===
+              "DRIVER_ASSIGNED"
+              ? "Get ready and start heading toward the pickup location."
+              : acceptedRide.status ===
+                "DRIVER_ARRIVING"
+                ? "You're on the way to the rider."
+                : "Take the rider safely to the destination."
             : isOnline
               ? "VIBE is checking for new ride requests."
               : "Go online when you're ready to receive ride requests."}
@@ -322,7 +504,9 @@ export default function DriverHomeScreen() {
                     styles.acceptedEyebrow
                   }
                 >
-                  DRIVER ASSIGNED
+                  {getRideStatusLabel(
+                    acceptedRide.status,
+                  )}
                 </Text>
 
                 <Text
@@ -346,7 +530,10 @@ export default function DriverHomeScreen() {
                     styles.acceptedStatusText
                   }
                 >
-                  ACCEPTED
+                  {acceptedRide.status ===
+                  "RIDE_STARTED"
+                    ? "LIVE"
+                    : "ACTIVE"}
                 </Text>
               </View>
             </View>
@@ -444,7 +631,13 @@ export default function DriverHomeScreen() {
               <Text
                 style={styles.assignedTitle}
               >
-                Ride assigned successfully
+                {acceptedRide.status ===
+                "DRIVER_ASSIGNED"
+                  ? "Ride assigned successfully"
+                  : acceptedRide.status ===
+                    "DRIVER_ARRIVING"
+                    ? "Driver is on the way"
+                    : "Ride is currently in progress"}
               </Text>
 
               <Text
@@ -453,14 +646,65 @@ export default function DriverHomeScreen() {
                 Ride ID: {acceptedRide.id}
               </Text>
             </View>
+
+            {acceptedRide.status !==
+            "RIDE_COMPLETED" ? (
+              <Pressable
+                disabled={actionLoading}
+                onPress={
+                  handleRideAction
+                }
+                style={({ pressed }) => [
+                  styles.lifecycleButton,
+                  actionLoading &&
+                    styles.lifecycleButtonDisabled,
+                  pressed &&
+                    !actionLoading &&
+                    styles.pressed,
+                ]}
+              >
+                {actionLoading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#FFFFFF"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.lifecycleButtonText
+                    }
+                  >
+                    {getActionButtonLabel(
+                      acceptedRide.status,
+                    )}
+                  </Text>
+                )}
+
+                {!actionLoading ? (
+                  <Text
+                    style={
+                      styles.lifecycleButtonArrow
+                    }
+                  >
+                    →
+                  </Text>
+                ) : null}
+              </Pressable>
+            ) : null}
           </View>
         </View>
       ) : null}
 
       {!acceptedRide && isOnline ? (
-        <View style={styles.requestsSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
+        <View
+          style={styles.requestsSection}
+        >
+          <View
+            style={styles.sectionHeader}
+          >
+            <Text
+              style={styles.sectionTitle}
+            >
               RIDE REQUESTS
             </Text>
 
@@ -472,18 +716,26 @@ export default function DriverHomeScreen() {
           </View>
 
           {pendingRides.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyIcon}>
+            <View
+              style={styles.emptyCard}
+            >
+              <Text
+                style={styles.emptyIcon}
+              >
                 ✦
               </Text>
 
-              <Text style={styles.emptyTitle}>
+              <Text
+                style={styles.emptyTitle}
+              >
                 Waiting for rides
               </Text>
 
-              <Text style={styles.emptyText}>
-                New ride requests will appear
-                here automatically.
+              <Text
+                style={styles.emptyText}
+              >
+                New ride requests will
+                appear here automatically.
               </Text>
             </View>
           ) : (
@@ -491,7 +743,9 @@ export default function DriverHomeScreen() {
               <RideRequestCard
                 key={ride.id}
                 ride={ride}
-                onAccept={handleAcceptRide}
+                onAccept={
+                  handleAcceptRide
+                }
                 accepting={
                   acceptingRideId ===
                   ride.id
@@ -554,58 +808,88 @@ function RideRequestCard({
 }) {
   return (
     <View style={styles.rideCard}>
-      <View style={styles.rideCardHeader}>
+      <View
+        style={styles.rideCardHeader}
+      >
         <View>
-          <Text style={styles.rideEyebrow}>
+          <Text
+            style={styles.rideEyebrow}
+          >
             NEW RIDE REQUEST
           </Text>
 
-          <Text style={styles.rideType}>
+          <Text
+            style={styles.rideType}
+          >
             {getRideTypeLabel(
               ride.rideType,
             )}
           </Text>
         </View>
 
-        <View style={styles.fareBadge}>
-          <Text style={styles.fareText}>
+        <View
+          style={styles.fareBadge}
+        >
+          <Text
+            style={styles.fareText}
+          >
             ₹{ride.estimatedFare}
           </Text>
         </View>
       </View>
 
       <View style={styles.route}>
-        <View style={styles.routeLine}>
-          <View style={styles.pickupDot} />
+        <View
+          style={styles.routeLine}
+        >
+          <View
+            style={styles.pickupDot}
+          />
 
           <View
-            style={styles.addressContainer}
+            style={
+              styles.addressContainer
+            }
           >
-            <Text style={styles.addressLabel}>
+            <Text
+              style={styles.addressLabel}
+            >
               PICKUP
             </Text>
 
-            <Text style={styles.address}>
+            <Text
+              style={styles.address}
+            >
               {ride.pickupAddress}
             </Text>
           </View>
         </View>
 
-        <View style={styles.verticalLine} />
+        <View
+          style={styles.verticalLine}
+        />
 
-        <View style={styles.routeLine}>
+        <View
+          style={styles.routeLine}
+        >
           <View
             style={styles.destinationDot}
           />
 
           <View
-            style={styles.addressContainer}
+            style={
+              styles.addressContainer
+            }
           >
-            <Text style={styles.addressLabel}>
+            <Text
+              style={styles.addressLabel}
+            >
               DESTINATION
             </Text>
 
-            <Text style={styles.address}>
+            <Text
+              style={styles.address}
+            >
               {ride.destinationAddress}
             </Text>
           </View>
@@ -641,7 +925,9 @@ function RideRequestCard({
           </Text>
         )}
 
-        <Text style={styles.comingSoon}>
+        <Text
+          style={styles.comingSoon}
+        >
           {accepting
             ? "ACCEPTING"
             : "NEXT"}
@@ -957,6 +1243,33 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 9,
     color: "#666666",
+  },
+
+  lifecycleButton: {
+    marginTop: 16,
+    minHeight: 52,
+    paddingHorizontal: 16,
+    borderRadius: 13,
+    backgroundColor: "#111111",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  lifecycleButtonDisabled: {
+    opacity: 0.55,
+  },
+
+  lifecycleButtonText: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: "#FFFFFF",
+  },
+
+  lifecycleButtonArrow: {
+    fontSize: 21,
+    fontWeight: "900",
+    color: "#D7FF3F",
   },
 
   requestsSection: {
