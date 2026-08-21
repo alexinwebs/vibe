@@ -145,7 +145,7 @@ app.get("/", async () => {
   return {
     name: "VIBE API",
     message: "Move different. Move VIBE.",
-    version: "0.2.0",
+    version: "0.3.0",
   };
 });
 
@@ -157,7 +157,7 @@ app.get("/health", async () => {
   return {
     status: "ok",
     service: "vibe-api",
-    version: "0.2.0",
+    version: "0.3.0",
   };
 });
 
@@ -165,49 +165,55 @@ app.get("/health", async () => {
 /*                                   RIDERS                                   */
 /* -------------------------------------------------------------------------- */
 
-app.get("/riders/:riderId", async (request, reply) => {
-  const { riderId } =
-    request.params as {
-      riderId: string;
+app.get(
+  "/riders/:riderId",
+  async (request, reply) => {
+    const { riderId } =
+      request.params as {
+        riderId: string;
+      };
+
+    const rider = riders.get(riderId);
+
+    if (!rider) {
+      return reply.status(404).send({
+        error: "RIDER_NOT_FOUND",
+        message: "Rider was not found.",
+      });
+    }
+
+    return {
+      rider,
     };
-
-  const rider = riders.get(riderId);
-
-  if (!rider) {
-    return reply.status(404).send({
-      error: "RIDER_NOT_FOUND",
-      message: "Rider was not found.",
-    });
-  }
-
-  return {
-    rider,
-  };
-});
+  },
+);
 
 /* -------------------------------------------------------------------------- */
 /*                                   DRIVERS                                  */
 /* -------------------------------------------------------------------------- */
 
-app.get("/drivers/:driverId", async (request, reply) => {
-  const { driverId } =
-    request.params as {
-      driverId: string;
+app.get(
+  "/drivers/:driverId",
+  async (request, reply) => {
+    const { driverId } =
+      request.params as {
+        driverId: string;
+      };
+
+    const driver = drivers.get(driverId);
+
+    if (!driver) {
+      return reply.status(404).send({
+        error: "DRIVER_NOT_FOUND",
+        message: "Driver was not found.",
+      });
+    }
+
+    return {
+      driver,
     };
-
-  const driver = drivers.get(driverId);
-
-  if (!driver) {
-    return reply.status(404).send({
-      error: "DRIVER_NOT_FOUND",
-      message: "Driver was not found.",
-    });
-  }
-
-  return {
-    driver,
-  };
-});
+  },
+);
 
 app.get("/drivers", async () => {
   return {
@@ -216,6 +222,10 @@ app.get("/drivers", async () => {
     ),
   };
 });
+
+/* -------------------------------------------------------------------------- */
+/*                              DRIVER RIDE REQUESTS                          */
+/* -------------------------------------------------------------------------- */
 
 app.get(
   "/drivers/:driverId/rides",
@@ -232,6 +242,19 @@ app.get(
         error: "DRIVER_NOT_FOUND",
         message: "Driver was not found.",
       });
+    }
+
+    /*
+     * Offline or unavailable drivers should
+     * not receive new ride requests.
+     */
+    if (
+      !driver.isOnline ||
+      !driver.isAvailable
+    ) {
+      return {
+        rides: [],
+      };
     }
 
     const pendingRides =
@@ -329,115 +352,119 @@ app.post(
 /*                                    RIDES                                   */
 /* -------------------------------------------------------------------------- */
 
-app.post("/rides", async (request, reply) => {
-  const body =
-    request.body as {
-      riderId?: string;
-      rideType?: RideType;
-      pickupAddress?: string;
-      destinationAddress?: string;
+app.post(
+  "/rides",
+  async (request, reply) => {
+    const body =
+      request.body as {
+        riderId?: string;
+        rideType?: RideType;
+        pickupAddress?: string;
+        destinationAddress?: string;
+      };
+
+    if (!body?.riderId) {
+      return reply.status(400).send({
+        error: "RIDER_ID_REQUIRED",
+        message: "riderId is required.",
+      });
+    }
+
+    if (!body.rideType) {
+      return reply.status(400).send({
+        error: "RIDE_TYPE_REQUIRED",
+        message: "rideType is required.",
+      });
+    }
+
+    if (
+      !["BIKE", "AUTO", "CAB"].includes(
+        body.rideType,
+      )
+    ) {
+      return reply.status(400).send({
+        error: "INVALID_RIDE_TYPE",
+        message:
+          "rideType must be BIKE, AUTO, or CAB.",
+      });
+    }
+
+    if (!body.pickupAddress) {
+      return reply.status(400).send({
+        error: "PICKUP_REQUIRED",
+        message:
+          "pickupAddress is required.",
+      });
+    }
+
+    if (!body.destinationAddress) {
+      return reply.status(400).send({
+        error: "DESTINATION_REQUIRED",
+        message:
+          "destinationAddress is required.",
+      });
+    }
+
+    const rider = riders.get(body.riderId);
+
+    if (!rider) {
+      return reply.status(404).send({
+        error: "RIDER_NOT_FOUND",
+        message: "Rider was not found.",
+      });
+    }
+
+    const estimatedFare =
+      calculateFare(body.rideType);
+
+    const isVibePlus =
+      rider.subscriptionPlan ===
+      "VIBE_PLUS";
+
+    const earnings =
+      calculateEarnings(
+        estimatedFare,
+        isVibePlus,
+      );
+
+    const now =
+      new Date().toISOString();
+
+    const ride: Ride = {
+      id: createId("ride"),
+
+      riderId: rider.id,
+
+      driverId: null,
+
+      rideType: body.rideType,
+
+      status: "SEARCHING",
+
+      pickupAddress:
+        body.pickupAddress,
+
+      destinationAddress:
+        body.destinationAddress,
+
+      estimatedFare,
+
+      finalFare: null,
+
+      earnings,
+
+      createdAt: now,
+
+      updatedAt: now,
     };
 
-  if (!body.riderId) {
-    return reply.status(400).send({
-      error: "RIDER_ID_REQUIRED",
-      message: "riderId is required.",
+    rides.set(ride.id, ride);
+
+    return reply.status(201).send({
+      ride,
     });
-  }
-
-  if (!body.rideType) {
-    return reply.status(400).send({
-      error: "RIDE_TYPE_REQUIRED",
-      message: "rideType is required.",
-    });
-  }
-
-  if (
-    !["BIKE", "AUTO", "CAB"].includes(
-      body.rideType,
-    )
-  ) {
-    return reply.status(400).send({
-      error: "INVALID_RIDE_TYPE",
-      message:
-        "rideType must be BIKE, AUTO, or CAB.",
-    });
-  }
-
-  if (!body.pickupAddress) {
-    return reply.status(400).send({
-      error: "PICKUP_REQUIRED",
-      message:
-        "pickupAddress is required.",
-    });
-  }
-
-  if (!body.destinationAddress) {
-    return reply.status(400).send({
-      error: "DESTINATION_REQUIRED",
-      message:
-        "destinationAddress is required.",
-    });
-  }
-
-  const rider = riders.get(body.riderId);
-
-  if (!rider) {
-    return reply.status(404).send({
-      error: "RIDER_NOT_FOUND",
-      message: "Rider was not found.",
-    });
-  }
-
-  const estimatedFare =
-    calculateFare(body.rideType);
-
-  const isVibePlus =
-    rider.subscriptionPlan === "VIBE_PLUS";
-
-  const earnings =
-    calculateEarnings(
-      estimatedFare,
-      isVibePlus,
-    );
-
-  const now =
-    new Date().toISOString();
-
-  const ride: Ride = {
-    id: createId("ride"),
-
-    riderId: rider.id,
-
-    driverId: null,
-
-    rideType: body.rideType,
-
-    status: "SEARCHING",
-
-    pickupAddress:
-      body.pickupAddress,
-
-    destinationAddress:
-      body.destinationAddress,
-
-    estimatedFare,
-
-    finalFare: null,
-
-    earnings,
-
-    createdAt: now,
-
-    updatedAt: now,
-  };
-
-  rides.set(ride.id, ride);
-
-  return reply.status(201).send({
-    ride,
-  });
-});
+  },
+);
 
 /* -------------------------------------------------------------------------- */
 /*                              FIND DRIVER                                   */
@@ -479,14 +506,19 @@ app.post(
       });
     }
 
-    drivers.set(driver.id, {
+    const updatedDriver: Driver = {
       ...driver,
       isAvailable: false,
-    });
+    };
+
+    drivers.set(
+      updatedDriver.id,
+      updatedDriver,
+    );
 
     const updatedRide: Ride = {
       ...ride,
-      driverId: driver.id,
+      driverId: updatedDriver.id,
       status: "DRIVER_ASSIGNED",
       updatedAt:
         new Date().toISOString(),
@@ -499,7 +531,112 @@ app.post(
 
     return {
       ride: updatedRide,
-      driver,
+      driver: updatedDriver,
+    };
+  },
+);
+
+/* -------------------------------------------------------------------------- */
+/*                               ACCEPT RIDE                                  */
+/* -------------------------------------------------------------------------- */
+
+app.post(
+  "/rides/:rideId/accept",
+  async (request, reply) => {
+    const { rideId } =
+      request.params as {
+        rideId: string;
+      };
+
+    const body =
+      request.body as {
+        driverId?: string;
+      };
+
+    if (!body?.driverId) {
+      return reply.status(400).send({
+        error: "DRIVER_ID_REQUIRED",
+        message: "driverId is required.",
+      });
+    }
+
+    const ride = rides.get(rideId);
+
+    if (!ride) {
+      return reply.status(404).send({
+        error: "RIDE_NOT_FOUND",
+        message: "Ride was not found.",
+      });
+    }
+
+    if (ride.status !== "SEARCHING") {
+      return reply.status(409).send({
+        error: "RIDE_ALREADY_ASSIGNED",
+        message:
+          "This ride is no longer available.",
+      });
+    }
+
+    if (ride.driverId !== null) {
+      return reply.status(409).send({
+        error: "RIDE_ALREADY_ASSIGNED",
+        message:
+          "This ride has already been assigned.",
+      });
+    }
+
+    const driver =
+      drivers.get(body.driverId);
+
+    if (!driver) {
+      return reply.status(404).send({
+        error: "DRIVER_NOT_FOUND",
+        message: "Driver was not found.",
+      });
+    }
+
+    if (!driver.isOnline) {
+      return reply.status(409).send({
+        error: "DRIVER_OFFLINE",
+        message:
+          "Driver must be online to accept a ride.",
+      });
+    }
+
+    if (!driver.isAvailable) {
+      return reply.status(409).send({
+        error: "DRIVER_UNAVAILABLE",
+        message:
+          "Driver is already assigned to another ride.",
+      });
+    }
+
+    const updatedDriver: Driver = {
+      ...driver,
+      isAvailable: false,
+    };
+
+    drivers.set(
+      updatedDriver.id,
+      updatedDriver,
+    );
+
+    const updatedRide: Ride = {
+      ...ride,
+      driverId: updatedDriver.id,
+      status: "DRIVER_ASSIGNED",
+      updatedAt:
+        new Date().toISOString(),
+    };
+
+    rides.set(
+      updatedRide.id,
+      updatedRide,
+    );
+
+    return {
+      ride: updatedRide,
+      driver: updatedDriver,
     };
   },
 );
@@ -526,7 +663,8 @@ app.post(
     }
 
     if (
-      ride.status !== "DRIVER_ASSIGNED"
+      ride.status !==
+      "DRIVER_ASSIGNED"
     ) {
       return reply.status(409).send({
         error: "INVALID_RIDE_STATUS",
@@ -569,8 +707,10 @@ app.post(
     }
 
     if (
-      ride.status !== "DRIVER_ARRIVING" &&
-      ride.status !== "DRIVER_ASSIGNED"
+      ride.status !==
+        "DRIVER_ARRIVING" &&
+      ride.status !==
+        "DRIVER_ASSIGNED"
     ) {
       return reply.status(409).send({
         error: "INVALID_RIDE_STATUS",
@@ -628,7 +768,7 @@ app.post(
     }
 
     const finalFare =
-      body.finalFare ??
+      body?.finalFare ??
       ride.estimatedFare;
 
     const updatedRide: Ride = {

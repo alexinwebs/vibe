@@ -16,6 +16,7 @@ import {
 import type { Ride } from "@vibe/types";
 
 import {
+  acceptRide,
   getPendingRides,
   getRideTypeLabel,
   goOffline as apiGoOffline,
@@ -36,8 +37,14 @@ export default function DriverHomeScreen() {
   const [pendingRides, setPendingRides] =
     useState<Ride[]>([]);
 
+  const [acceptedRide, setAcceptedRide] =
+    useState<Ride | null>(null);
+
   const [loadingRides, setLoadingRides] =
     useState(false);
+
+  const [acceptingRideId, setAcceptingRideId] =
+    useState<string | null>(null);
 
   const [apiError, setApiError] =
     useState<string | null>(null);
@@ -47,8 +54,7 @@ export default function DriverHomeScreen() {
 
   const loadPendingRides =
     useCallback(async () => {
-      if (!isOnline) {
-        setPendingRides([]);
+      if (!isOnline || acceptedRide) {
         return;
       }
 
@@ -74,11 +80,19 @@ export default function DriverHomeScreen() {
       } finally {
         setLoadingRides(false);
       }
-    }, [driverId, isOnline]);
+    }, [
+      driverId,
+      isOnline,
+      acceptedRide,
+    ]);
 
   useEffect(() => {
     if (!isOnline) {
       setPendingRides([]);
+      return;
+    }
+
+    if (acceptedRide) {
       return;
     }
 
@@ -94,6 +108,7 @@ export default function DriverHomeScreen() {
       clearInterval(interval);
   }, [
     isOnline,
+    acceptedRide,
     loadPendingRides,
   ]);
 
@@ -136,6 +151,47 @@ export default function DriverHomeScreen() {
           ? error.message
           : "Failed to go offline.",
       );
+    }
+  };
+
+  const handleAcceptRide = async (
+    ride: Ride,
+  ) => {
+    if (acceptingRideId || acceptedRide) {
+      return;
+    }
+
+    try {
+      setApiError(null);
+      setAcceptingRideId(ride.id);
+
+      const result =
+        await acceptRide(
+          ride.id,
+          driverId,
+        );
+
+      setAcceptedRide(result.ride);
+
+      setPendingRides((currentRides) =>
+        currentRides.filter(
+          (currentRide) =>
+            currentRide.id !== ride.id,
+        ),
+      );
+    } catch (error) {
+      console.warn(
+        "Failed to accept ride:",
+        error,
+      );
+
+      setApiError(
+        error instanceof Error
+          ? error.message
+          : "Failed to accept ride.",
+      );
+    } finally {
+      setAcceptingRideId(null);
     }
   };
 
@@ -195,41 +251,47 @@ export default function DriverHomeScreen() {
         </Text>
 
         <Text style={styles.heroTitle}>
-          {isOnline
-            ? "You're live."
-            : "You're offline."}
+          {acceptedRide
+            ? "Ride accepted."
+            : isOnline
+              ? "You're live."
+              : "You're offline."}
         </Text>
 
         <Text style={styles.heroDescription}>
-          {isOnline
-            ? "VIBE is checking for new ride requests."
-            : "Go online when you're ready to receive ride requests."}
+          {acceptedRide
+            ? "You have accepted a VIBE ride. Complete this ride before accepting another request."
+            : isOnline
+              ? "VIBE is checking for new ride requests."
+              : "Go online when you're ready to receive ride requests."}
         </Text>
 
-        <Pressable
-          onPress={
-            isOnline
-              ? handleGoOffline
-              : handleGoOnline
-          }
-          style={({ pressed }) => [
-            styles.toggleButton,
-            isOnline
-              ? styles.offlineButton
-              : styles.onlineButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={styles.buttonText}>
-            {isOnline
-              ? "GO OFFLINE"
-              : "GO ONLINE"}
-          </Text>
+        {!acceptedRide ? (
+          <Pressable
+            onPress={
+              isOnline
+                ? handleGoOffline
+                : handleGoOnline
+            }
+            style={({ pressed }) => [
+              styles.toggleButton,
+              isOnline
+                ? styles.offlineButton
+                : styles.onlineButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.buttonText}>
+              {isOnline
+                ? "GO OFFLINE"
+                : "GO ONLINE"}
+            </Text>
 
-          <Text style={styles.arrow}>
-            →
-          </Text>
-        </Pressable>
+            <Text style={styles.arrow}>
+              →
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {apiError ? (
@@ -244,7 +306,158 @@ export default function DriverHomeScreen() {
         </View>
       ) : null}
 
-      {isOnline ? (
+      {acceptedRide ? (
+        <View style={styles.acceptedSection}>
+          <Text style={styles.sectionTitle}>
+            ACTIVE RIDE
+          </Text>
+
+          <View style={styles.acceptedCard}>
+            <View
+              style={styles.acceptedHeader}
+            >
+              <View>
+                <Text
+                  style={
+                    styles.acceptedEyebrow
+                  }
+                >
+                  DRIVER ASSIGNED
+                </Text>
+
+                <Text
+                  style={
+                    styles.acceptedRideType
+                  }
+                >
+                  {getRideTypeLabel(
+                    acceptedRide.rideType,
+                  )}
+                </Text>
+              </View>
+
+              <View
+                style={
+                  styles.acceptedStatus
+                }
+              >
+                <Text
+                  style={
+                    styles.acceptedStatusText
+                  }
+                >
+                  ACCEPTED
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.route}>
+              <View
+                style={styles.routeLine}
+              >
+                <View
+                  style={styles.pickupDot}
+                />
+
+                <View
+                  style={
+                    styles.addressContainer
+                  }
+                >
+                  <Text
+                    style={
+                      styles.addressLabel
+                    }
+                  >
+                    PICKUP
+                  </Text>
+
+                  <Text
+                    style={styles.address}
+                  >
+                    {
+                      acceptedRide.pickupAddress
+                    }
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={styles.verticalLine}
+              />
+
+              <View
+                style={styles.routeLine}
+              >
+                <View
+                  style={
+                    styles.destinationDot
+                  }
+                />
+
+                <View
+                  style={
+                    styles.addressContainer
+                  }
+                >
+                  <Text
+                    style={
+                      styles.addressLabel
+                    }
+                  >
+                    DESTINATION
+                  </Text>
+
+                  <Text
+                    style={styles.address}
+                  >
+                    {
+                      acceptedRide.destinationAddress
+                    }
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View
+              style={styles.fareRow}
+            >
+              <Text
+                style={styles.fareLabel}
+              >
+                ESTIMATED FARE
+              </Text>
+
+              <Text
+                style={styles.fareValue}
+              >
+                ₹
+                {
+                  acceptedRide.estimatedFare
+                }
+              </Text>
+            </View>
+
+            <View
+              style={styles.assignedCard}
+            >
+              <Text
+                style={styles.assignedTitle}
+              >
+                Ride assigned successfully
+              </Text>
+
+              <Text
+                style={styles.assignedText}
+              >
+                Ride ID: {acceptedRide.id}
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {!acceptedRide && isOnline ? (
         <View style={styles.requestsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
@@ -269,7 +482,8 @@ export default function DriverHomeScreen() {
               </Text>
 
               <Text style={styles.emptyText}>
-                New ride requests will appear here automatically.
+                New ride requests will appear
+                here automatically.
               </Text>
             </View>
           ) : (
@@ -277,6 +491,11 @@ export default function DriverHomeScreen() {
               <RideRequestCard
                 key={ride.id}
                 ride={ride}
+                onAccept={handleAcceptRide}
+                accepting={
+                  acceptingRideId ===
+                  ride.id
+                }
               />
             ))
           )}
@@ -290,7 +509,9 @@ export default function DriverHomeScreen() {
           </Text>
 
           <Text style={styles.statValue}>
-            ₹0
+            {acceptedRide
+              ? `₹${acceptedRide.estimatedFare}`
+              : "₹0"}
           </Text>
         </View>
 
@@ -298,11 +519,11 @@ export default function DriverHomeScreen() {
 
         <View style={styles.stat}>
           <Text style={styles.statLabel}>
-            RIDES
+            ACTIVE
           </Text>
 
           <Text style={styles.statValue}>
-            0
+            {acceptedRide ? "1" : "0"}
           </Text>
         </View>
 
@@ -324,8 +545,12 @@ export default function DriverHomeScreen() {
 
 function RideRequestCard({
   ride,
+  onAccept,
+  accepting,
 }: {
   ride: Ride;
+  onAccept: (ride: Ride) => void;
+  accepting: boolean;
 }) {
   return (
     <View style={styles.rideCard}>
@@ -353,7 +578,9 @@ function RideRequestCard({
         <View style={styles.routeLine}>
           <View style={styles.pickupDot} />
 
-          <View style={styles.addressContainer}>
+          <View
+            style={styles.addressContainer}
+          >
             <Text style={styles.addressLabel}>
               PICKUP
             </Text>
@@ -367,9 +594,13 @@ function RideRequestCard({
         <View style={styles.verticalLine} />
 
         <View style={styles.routeLine}>
-          <View style={styles.destinationDot} />
+          <View
+            style={styles.destinationDot}
+          />
 
-          <View style={styles.addressContainer}>
+          <View
+            style={styles.addressContainer}
+          >
             <Text style={styles.addressLabel}>
               DESTINATION
             </Text>
@@ -382,15 +613,38 @@ function RideRequestCard({
       </View>
 
       <Pressable
-        disabled
-        style={styles.acceptButton}
+        disabled={accepting}
+        onPress={() =>
+          onAccept(ride)
+        }
+        style={({ pressed }) => [
+          styles.acceptButton,
+          accepting &&
+            styles.acceptButtonDisabled,
+          pressed &&
+            !accepting &&
+            styles.pressed,
+        ]}
       >
-        <Text style={styles.acceptButtonText}>
-          ACCEPT RIDE
-        </Text>
+        {accepting ? (
+          <ActivityIndicator
+            size="small"
+            color="#FFFFFF"
+          />
+        ) : (
+          <Text
+            style={
+              styles.acceptButtonText
+            }
+          >
+            ACCEPT RIDE
+          </Text>
+        )}
 
         <Text style={styles.comingSoon}>
-          NEXT
+          {accepting
+            ? "ACCEPTING"
+            : "NEXT"}
         </Text>
       </Pressable>
     </View>
@@ -561,6 +815,150 @@ const styles = StyleSheet.create({
     color: "#555555",
   },
 
+  acceptedSection: {
+    marginTop: 22,
+  },
+
+  acceptedCard: {
+    marginTop: 10,
+    padding: 18,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: "#111111",
+    backgroundColor: "#FFFFFF",
+  },
+
+  acceptedHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+
+  acceptedEyebrow: {
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+    color: "#49B96B",
+  },
+
+  acceptedRideType: {
+    marginTop: 4,
+    fontSize: 20,
+    fontWeight: "900",
+    color: "#111111",
+  },
+
+  acceptedStatus: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: "#D7FF3F",
+    borderWidth: 2,
+    borderColor: "#111111",
+  },
+
+  acceptedStatusText: {
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1,
+    color: "#111111",
+  },
+
+  route: {
+    marginTop: 20,
+  },
+
+  routeLine: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  pickupDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#111111",
+    marginRight: 12,
+  },
+
+  destinationDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: "#D7FF3F",
+    borderWidth: 2,
+    borderColor: "#111111",
+    marginRight: 12,
+  },
+
+  verticalLine: {
+    width: 2,
+    height: 18,
+    backgroundColor: "#CCCCCC",
+    marginLeft: 4,
+    marginVertical: 2,
+  },
+
+  addressContainer: {
+    flex: 1,
+  },
+
+  addressLabel: {
+    fontSize: 7,
+    fontWeight: "900",
+    letterSpacing: 1,
+    color: "#888888",
+  },
+
+  address: {
+    marginTop: 2,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#111111",
+  },
+
+  fareRow: {
+    marginTop: 20,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: "#DDDDDD",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  fareLabel: {
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1,
+    color: "#777777",
+  },
+
+  fareValue: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#111111",
+  },
+
+  assignedCard: {
+    marginTop: 16,
+    padding: 13,
+    borderRadius: 14,
+    backgroundColor: "#EEFFC0",
+  },
+
+  assignedTitle: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: "#111111",
+  },
+
+  assignedText: {
+    marginTop: 4,
+    fontSize: 9,
+    color: "#666666",
+  },
+
   requestsSection: {
     marginTop: 22,
   },
@@ -652,59 +1050,6 @@ const styles = StyleSheet.create({
     color: "#111111",
   },
 
-  route: {
-    marginTop: 20,
-  },
-
-  routeLine: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  pickupDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#111111",
-    marginRight: 12,
-  },
-
-  destinationDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-    backgroundColor: "#D7FF3F",
-    borderWidth: 2,
-    borderColor: "#111111",
-    marginRight: 12,
-  },
-
-  verticalLine: {
-    width: 2,
-    height: 18,
-    backgroundColor: "#CCCCCC",
-    marginLeft: 4,
-    marginVertical: 2,
-  },
-
-  addressContainer: {
-    flex: 1,
-  },
-
-  addressLabel: {
-    fontSize: 7,
-    fontWeight: "900",
-    letterSpacing: 1,
-    color: "#888888",
-  },
-
-  address: {
-    marginTop: 2,
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#111111",
-  },
-
   acceptButton: {
     marginTop: 20,
     minHeight: 50,
@@ -714,7 +1059,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    opacity: 0.5,
+  },
+
+  acceptButtonDisabled: {
+    opacity: 0.55,
   },
 
   acceptButtonText: {

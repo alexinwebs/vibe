@@ -23,28 +23,43 @@ async function apiRequest<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  const hasBody =
+    options?.body !== undefined &&
+    options?.body !== null;
+
+  if (hasBody) {
+    headers["Content-Type"] =
+      "application/json";
+  }
+
   const response = await fetch(
     `${API_BASE_URL}${path}`,
     {
       ...options,
       headers: {
-        "Content-Type": "application/json",
+        ...headers,
         ...(options?.headers ?? {}),
       },
     },
   );
 
   if (!response.ok) {
-    let message = `VIBE API error: ${response.status}`;
+    let message =
+      `VIBE API error: ${response.status}`;
 
     try {
-      const body = await response.json();
+      const body =
+        await response.json();
 
       if (body?.message) {
         message = body.message;
       }
     } catch {
-      // Ignore invalid error response bodies.
+      // Ignore invalid error response.
     }
 
     throw new Error(message);
@@ -52,6 +67,10 @@ async function apiRequest<T>(
 
   return response.json() as Promise<T>;
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                  DRIVER                                    */
+/* -------------------------------------------------------------------------- */
 
 export async function getDriver(
   driverId: string,
@@ -72,6 +91,7 @@ export async function goOnline(
       `/drivers/${driverId}/online`,
       {
         method: "POST",
+        body: JSON.stringify({}),
       },
     );
 
@@ -86,11 +106,16 @@ export async function goOffline(
       `/drivers/${driverId}/offline`,
       {
         method: "POST",
+        body: JSON.stringify({}),
       },
     );
 
   return result.driver;
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                RIDE REQUESTS                               */
+/* -------------------------------------------------------------------------- */
 
 export async function getPendingRides(
   driverId: string,
@@ -102,6 +127,10 @@ export async function getPendingRides(
 
   return result.rides;
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                ACCEPT RIDE                                 */
+/* -------------------------------------------------------------------------- */
 
 export async function acceptRide(
   rideId: string,
@@ -117,6 +146,10 @@ export async function acceptRide(
     },
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/*                               RIDE LABELS                                  */
+/* -------------------------------------------------------------------------- */
 
 export function getRideTypeLabel(
   rideType: RideType,
