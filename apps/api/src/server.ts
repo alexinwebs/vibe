@@ -217,6 +217,114 @@ app.get("/drivers", async () => {
   };
 });
 
+app.get(
+  "/drivers/:driverId/rides",
+  async (request, reply) => {
+    const { driverId } =
+      request.params as {
+        driverId: string;
+      };
+
+    const driver = drivers.get(driverId);
+
+    if (!driver) {
+      return reply.status(404).send({
+        error: "DRIVER_NOT_FOUND",
+        message: "Driver was not found.",
+      });
+    }
+
+    const pendingRides =
+      Array.from(rides.values())
+        .filter(
+          (ride) =>
+            ride.status === "SEARCHING" &&
+            ride.driverId === null,
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() -
+            new Date(b.createdAt).getTime(),
+        );
+
+    return {
+      rides: pendingRides,
+    };
+  },
+);
+
+/* -------------------------------------------------------------------------- */
+/*                           DRIVER AVAILABILITY                              */
+/* -------------------------------------------------------------------------- */
+
+app.post(
+  "/drivers/:driverId/online",
+  async (request, reply) => {
+    const { driverId } =
+      request.params as {
+        driverId: string;
+      };
+
+    const driver = drivers.get(driverId);
+
+    if (!driver) {
+      return reply.status(404).send({
+        error: "DRIVER_NOT_FOUND",
+        message: "Driver was not found.",
+      });
+    }
+
+    const updatedDriver: Driver = {
+      ...driver,
+      isOnline: true,
+      isAvailable: true,
+    };
+
+    drivers.set(
+      updatedDriver.id,
+      updatedDriver,
+    );
+
+    return {
+      driver: updatedDriver,
+    };
+  },
+);
+
+app.post(
+  "/drivers/:driverId/offline",
+  async (request, reply) => {
+    const { driverId } =
+      request.params as {
+        driverId: string;
+      };
+
+    const driver = drivers.get(driverId);
+
+    if (!driver) {
+      return reply.status(404).send({
+        error: "DRIVER_NOT_FOUND",
+        message: "Driver was not found.",
+      });
+    }
+
+    const updatedDriver: Driver = {
+      ...driver,
+      isOnline: false,
+      isAvailable: false,
+    };
+
+    drivers.set(
+      updatedDriver.id,
+      updatedDriver,
+    );
+
+    return {
+      driver: updatedDriver,
+    };
+  },
+);
+
 /* -------------------------------------------------------------------------- */
 /*                                    RIDES                                   */
 /* -------------------------------------------------------------------------- */
